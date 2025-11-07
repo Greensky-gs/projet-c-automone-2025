@@ -148,7 +148,7 @@ unsigned int Numero(tInode inode) {
 */
 long Taille(tInode inode) {
 	ActualiserDateDerAccess(inode);
-	return inode->numero;
+	return inode->taille;
 }
 
 /* V1
@@ -174,9 +174,12 @@ void AfficherInode(tInode inode) {
 
 	natureFichier type = Type(inode);
 	char * typeText = type == ORDINAIRE ? "Ordinaire" : type == REPERTOIRE ? "Repertoire" : type == AUTRE ? "Autre" : "never";
+	tBloc lecture = CreerBloc();
+	LireDonneesInode1bloc(inode, lecture, TAILLE_BLOC);
 
 	// Joli affichage sous forme d'objet javascript (sans couleur mais ça pourrait)
-	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s\n}\n", Numero(inode), type, typeText, Taille(inode), ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode));
+	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s\n    contenu: %s\n}\n", Numero(inode), type, typeText, Taille(inode), ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode), lecture);
+	DetruireBloc(&lecture);
 }
 
 /* V1
