@@ -6,6 +6,8 @@
 **/
 #include "inode.h"
 #include "bloc.h"
+#include <time.h>
+#include <stdlib.h>
 
 // Nombre maximal de blocs dans un inode
 #define NB_BLOCS_DIRECTS 10
@@ -15,12 +17,16 @@ struct sInode
 {
 	// Numéro de l'inode
 	unsigned int numero;
+
 	// Le type du fichier : ordinaire, répertoire ou autre
 	natureFichier type;
+
 	// La taille en octets du fichier
 	long taille;
+
 	// Les adresses directes vers les blocs (NB_BLOCS_DIRECTS au maximum)
 	tBloc blocDonnees[NB_BLOCS_DIRECTS];
+
 	// Les dates : dernier accès à l'inode, dernière modification du fichier
 	// et de l'inode
 	time_t dateDerAcces, dateDerModif, dateDerModifInode;
@@ -32,7 +38,38 @@ struct sInode
 * Retour : l'inode créé ou NULL en cas de problème
 */
 tInode CreerInode(int numInode, natureFichier type) {
-	// A COMPLETER
+	// Allocation dynamique d'un espace pour l'inode
+	struct sInode * iNode = malloc(sizeof(struct sInode));
+	if (iNode == NULL) {
+		// Problème de création -> stderr
+		fprintf(stderr, "CreerInode : Probleme creation");
+		return NULL;
+	}
+
+	// Variables spécifiées
+	iNode->numero = numInode;
+	iNode->type = type;
+	iNode->taille=0; // Taille à 0 par défaut
+
+	// Variables par défaut
+	time(&(iNode->dateDerAcces));
+	time(&(iNode->dateDerModif));
+	time(&(iNode->dateDerModifInode));
+
+	// Création des NB_BLOCS_DIRECTS lors de la création de l'inode
+	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
+		tBloc bloc = CreerBloc();
+		if (bloc == NULL) {
+			// problème sur un bloc = problème sur l'inode -> arrêt de la fonction
+			fprintf(stderr, "CreerInode : probleme creaation");
+			perror("Erreur lors de la creation des blocs de donnees");
+
+			return NULL;
+		}
+		iNode->blocDonnees[k] = bloc;
+	}
+
+	return iNode;
 }
 
 /* V1
@@ -41,7 +78,24 @@ tInode CreerInode(int numInode, natureFichier type) {
 * Retour : aucun
 */
 void DetruireInode(tInode *pInode) {
-	// A COMPLETER
+	// D'abord détruire les NB_BLOCS_DIRECTS
+	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
+		DetruireBloc(&(*pInode)->blocDonnees[k]);
+	}
+	// Libération et pointage sur NULL
+	free(*pInode);
+	*pInode = NULL;
+}
+
+// 3 fonctions statiques de modification des dates
+static void ActualiserDateDerAccess(tInode inode) {
+	time(&(inode->dateDerAcces));
+}
+static void ActualiserDateDerModif(tInode inode) {
+	time(&(inode->dateDerModif));
+}
+static void ActualiserDateDerModifInode(tInode inode) {
+	time(&(inode->dateDerModifInode));
 }
 
 /* V1
@@ -50,7 +104,11 @@ void DetruireInode(tInode *pInode) {
 * Retour : la date de dernier accès à l'inode
 */
 time_t DateDerAcces(tInode inode) {
-	// A COMPLETER
+	// On récupère avant d'actualiser, autrement on perd l'information
+	time_t date = inode->dateDerAcces;
+	ActualiserDateDerAccess(inode);
+
+	return date;
 }
 
 /* V1
@@ -59,7 +117,8 @@ time_t DateDerAcces(tInode inode) {
 * Retour : la date de dernière modification de l'inode
 */
 time_t DateDerModif(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->dateDerModifInode;
 }
 
 /* V1
@@ -68,7 +127,8 @@ time_t DateDerModif(tInode inode) {
 * Retour : la date de dernière modification du fichier associé à l'inode
 */
 time_t DateDerModifFichier(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->dateDerModif;
 }
 
 /* V1
@@ -77,7 +137,8 @@ time_t DateDerModifFichier(tInode inode) {
 * Retour : le numéro de l'inode
 */
 unsigned int Numero(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->numero;
 }
 
 /* V1
@@ -86,7 +147,8 @@ unsigned int Numero(tInode inode) {
 * Retour : la taille en octets du fichier associé à l'inode
 */
 long Taille(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->numero;
 }
 
 /* V1
@@ -95,7 +157,8 @@ long Taille(tInode inode) {
 * Retour : le type du fichier associé à l'inode
 */
 natureFichier Type(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->type;
 }
 
 /* V1
@@ -104,7 +167,16 @@ natureFichier Type(tInode inode) {
 * Retour : aucun
 */
 void AfficherInode(tInode inode) {
-	// A COMPLETER
+	// On récupère la dernière date d'accès avant toute autre chose sinon on perd l'information
+	time_t derAccess = DateDerAcces(inode);
+	time_t derModifFichier = DateDerModifFichier(inode);
+	time_t derModifInode = DateDerModif(inode);
+
+	natureFichier type = Type(inode);
+	char * typeText = type == ORDINAIRE ? "Ordinaire" : type == REPERTOIRE ? "Repertoire" : type == AUTRE ? "Autre" : "never";
+
+	// Joli affichage sous forme d'objet javascript (sans couleur mais ça pourrait)
+	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s\n}\n", Numero(inode), type, typeText, Taille(inode), ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode));
 }
 
 /* V1
@@ -114,7 +186,11 @@ void AfficherInode(tInode inode) {
 * Retour : le nombre d'octets effectivement écrits dans l'inode ou -1 en cas d'erreur
 */
 long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
-	// A COMPLETER
+	// On utilise simplement la fonction de lecture d'un bloc sur le premier bloc
+	long octets_lus = LireContenuBloc(inode->blocDonnees[0], contenu, taille);
+	ActualiserDateDerAccess(inode); // Modification de la date d'accès au fichier, pusiqu'il a été lu
+
+	return octets_lus;
 }
 
 /* V1
@@ -124,5 +200,12 @@ long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
 * Retour : le nombre d'octets effectivement lus dans l'inode ou -1 en cas d'erreur
 */
 long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
-	// A COMPLETER
+	// On utlise simplement la fonction d'écriture sur le premier bloc
+	long octets_ecrits = EcrireContenuBloc(inode->blocDonnees[0], contenu, taille);
+	ActualiserDateDerModif(inode); // Modification de la date de modification du fichier car il a été écrit
+
+	inode->taille = octets_ecrits; // La taille a également changé
+	ActualiserDateDerModifInode(inode); // Donc on modifie la date de modification de l'inode
+	return octets_ecrits;
+	
 }

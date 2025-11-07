@@ -6,6 +6,8 @@
 **/
 
 #include "bloc.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 /* V1
 * Crée et retourne un nouveau bloc de données.
@@ -13,7 +15,14 @@
 * Retour : le bloc créé ou NULL en cas de problème
 */
 tBloc CreerBloc (void) {
-	// A COMPLETER
+	// Allocation de TAILLE_BLOC octets
+	tBloc ref = malloc(TAILLE_BLOC);
+	if (ref == NULL) {
+		// Erreur dans stderr
+		fprintf(stderr, "CreerBloc : probleme creation");
+		return NULL;
+	}
+	return ref;
 }
 
 /* V1
@@ -22,7 +31,9 @@ tBloc CreerBloc (void) {
 * Retour : aucun
 */
 void DetruireBloc(tBloc *pBloc) {
-	// A COMPLETER
+	// Libération et pointage vers NULL
+	free(*pBloc);
+	*pBloc = NULL;
 }
 
 /* V1
@@ -32,7 +43,15 @@ void DetruireBloc(tBloc *pBloc) {
 * Retour : le nombre d'octets effectivement écrits dans le bloc
 */
 long EcrireContenuBloc (tBloc bloc, unsigned char *contenu, long taille) {
-	// A COMPLETER
+	long i = 0;
+	// S'arrête quand i dépasse la taille taille ou la taille d'un bloc
+	while (i < taille && i < TAILLE_BLOC) {
+		bloc[i] = contenu[i];
+		i++;
+	}
+
+	// I vaut donc l'écriture effective
+	return i;
 }
 
 /* V1
@@ -42,5 +61,12 @@ long EcrireContenuBloc (tBloc bloc, unsigned char *contenu, long taille) {
 * Retour : le nombre d'octets effectivement lus dans le bloc
 */
 long LireContenuBloc(tBloc bloc, unsigned char *contenu, long taille) {
-	// A COMPLETER
+	long i = 0;
+	// S'arrête quand i dépasse la taille taille ou la taille d'un bloc
+	while (i < taille && i < TAILLE_BLOC) {
+		*(contenu + i) = bloc[i];
+		i++;
+	}
+	// i vaut donc la lecture effective
+	return i;
 }
