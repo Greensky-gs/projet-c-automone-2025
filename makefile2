@@ -1,0 +1,41 @@
+CC=gcc
+FLAGS=-Wall
+output=gerer_sf_v2
+deps=bloc.o inode.o sf.o
+RM=rm -f
+VERSION=V2
+HREF=fourni/V2/bloc.h fourni/V2/inode.h fourni/V2/sf.h
+SANITIZES=-fsanitize=address,undefined
+
+# Variable des sanitizers passés dans la commande
+SANITIZERS=
+ifeq ($(strip $(S)),)
+	ifneq (,$(findstring S,$(MAKEFLAGS)))
+		# Si on a -S dans la ligne de commande on rajoute les sanitizers
+		SANITIZERS=$(SANITIZES)
+	endif
+endif
+
+# Message d'avertissement des sanitizers
+ECHO_MSG=@echo -e "\033[0;32mCompilation normale\033[0m"
+
+ifneq ($(strip $(SANITIZERS)),) # Modification
+	ECHO_MSG=@echo -e "\033[0;31mAjout des sanitizers\033[0m"
+endif
+
+$(output): $(output).o $(deps)
+	$(ECHO_MSG)
+	$(CC) $(FLAGS) $(SANITIZERS) $(output).o $(deps) -o $(output).exe
+
+$(output).o: $(output).c $(HREF)
+	$(CC) $(FLAGS) $(SANITIZERS) -c $(output).c
+
+bloc.o: fourni/$(VERSION)/bloc.c fourni/$(VERSION)/bloc.h
+	$(CC) $(FLAGS) $(SANITIZERS) -c fourni/$(VERSION)/bloc.c
+inode.o: fourni/$(VERSION)/inode.c fourni/$(VERSION)/inode.h
+	$(CC) $(FLAGS) $(SANITIZERS) -c fourni/$(VERSION)/inode.c
+sf.o: fourni/$(VERSION)/sf.c fourni/$(VERSION)/sf.h
+	$(CC) $(GLAGS) $(SANITIZERS) -c fourni/$(VERSION)/sf.c
+
+clean:
+	$(RM) *.o *.exe
