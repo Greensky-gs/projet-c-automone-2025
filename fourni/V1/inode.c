@@ -38,23 +38,29 @@ struct sInode
 * Retour : l'inode créé ou NULL en cas de problème
 */
 tInode CreerInode(int numInode, natureFichier type) {
+	// Allocation dynamique d'un espace pour l'inode
 	struct sInode * iNode = malloc(sizeof(struct sInode));
 	if (iNode == NULL) {
+		// Problème de création -> stderr
 		fprintf(stderr, "CreerInode : Probleme creation");
 		return NULL;
 	}
 
+	// Variables spécifiées
 	iNode->numero = numInode;
 	iNode->type = type;
-	iNode->taille=0;
+	iNode->taille=0; // Taille à 0 par défaut
 
+	// Variables par défaut
 	time(&(iNode->dateDerAcces));
 	time(&(iNode->dateDerModif));
 	time(&(iNode->dateDerModifInode));
 
+	// Création des NB_BLOCS_DIRECTS lors de la création de l'inode
 	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
 		tBloc bloc = CreerBloc();
 		if (bloc == NULL) {
+			// problème sur un bloc = problème sur l'inode -> arrêt de la fonction
 			fprintf(stderr, "CreerInode : probleme creaation");
 			perror("Erreur lors de la creation des blocs de donnees");
 
@@ -72,13 +78,16 @@ tInode CreerInode(int numInode, natureFichier type) {
 * Retour : aucun
 */
 void DetruireInode(tInode *pInode) {
+	// D'abord détruire les NB_BLOCS_DIRECTS
 	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
 		DetruireBloc(&(*pInode)->blocDonnees[k]);
 	}
+	// Libération et pointage sur NULL
 	free(*pInode);
 	*pInode = NULL;
 }
 
+// 3 fonctions statiques de modification des dates
 static void ActualiserDateDerAccess(tInode inode) {
 	time(&(inode->dateDerAcces));
 }
@@ -95,6 +104,7 @@ static void ActualiserDateDerModifInode(tInode inode) {
 * Retour : la date de dernier accès à l'inode
 */
 time_t DateDerAcces(tInode inode) {
+	// On récupère avant d'actualiser, autrement on perd l'information
 	time_t date = inode->dateDerAcces;
 	ActualiserDateDerAccess(inode);
 
@@ -157,6 +167,7 @@ natureFichier Type(tInode inode) {
 * Retour : aucun
 */
 void AfficherInode(tInode inode) {
+	// On récupère la dernière date d'accès avant toute autre chose sinon on perd l'information
 	time_t derAccess = DateDerAcces(inode);
 	time_t derModifFichier = DateDerModifFichier(inode);
 	time_t derModifInode = DateDerModif(inode);
@@ -164,6 +175,7 @@ void AfficherInode(tInode inode) {
 	natureFichier type = Type(inode);
 	char * typeText = type == ORDINAIRE ? "Ordinaire" : type == REPERTOIRE ? "Repertoire" : type == AUTRE ? "Autre" : "never";
 
+	// Joli affichage sous forme d'objet javascript (sans couleur mais ça pourrait)
 	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s\n}\n", Numero(inode), type, typeText, Taille(inode), ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode));
 }
 
@@ -174,8 +186,9 @@ void AfficherInode(tInode inode) {
 * Retour : le nombre d'octets effectivement écrits dans l'inode ou -1 en cas d'erreur
 */
 long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
+	// On utilise simplement la fonction de lecture d'un bloc sur le premier bloc
 	long octets_lus = LireContenuBloc(inode->blocDonnees[0], contenu, taille);
-	ActualiserDateDerAccess(inode);
+	ActualiserDateDerAccess(inode); // Modification de la date d'accès au fichier, pusiqu'il a été lu
 
 	return octets_lus;
 }
@@ -187,11 +200,12 @@ long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
 * Retour : le nombre d'octets effectivement lus dans l'inode ou -1 en cas d'erreur
 */
 long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
+	// On utlise simplement la fonction d'écriture sur le premier bloc
 	long octets_ecrits = EcrireContenuBloc(inode->blocDonnees[0], contenu, taille);
-	ActualiserDateDerModif(inode);
+	ActualiserDateDerModif(inode); // Modification de la date de modification du fichier car il a été écrit
 
-	inode->taille = octets_ecrits;
-	ActualiserDateDerModifInode(inode);
+	inode->taille = octets_ecrits; // La taille a également changé
+	ActualiserDateDerModifInode(inode); // Donc on modifie la date de modification de l'inode
 	return octets_ecrits;
 	
 }

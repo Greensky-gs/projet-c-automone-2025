@@ -15,8 +15,10 @@
 * Retour : le bloc créé ou NULL en cas de problème
 */
 tBloc CreerBloc (void) {
+	// Allocation de TAILLE_BLOC octets
 	tBloc ref = malloc(TAILLE_BLOC);
 	if (ref == NULL) {
+		// Erreur dans stderr
 		fprintf(stderr, "CreerBloc : probleme creation");
 		return NULL;
 	}
@@ -29,6 +31,7 @@ tBloc CreerBloc (void) {
 * Retour : aucun
 */
 void DetruireBloc(tBloc *pBloc) {
+	// Libération et pointage vers NULL
 	free(*pBloc);
 	*pBloc = NULL;
 }
@@ -41,11 +44,13 @@ void DetruireBloc(tBloc *pBloc) {
 */
 long EcrireContenuBloc(tBloc bloc, unsigned char * contenu, long taille) {
 	long i = 0;
+	// S'arrête quand i dépasse la taille taille ou la taille d'un bloc
 	while (i < taille && i < TAILLE_BLOC) {
 		bloc[i] = contenu[i];
 		i++;
 	}
 
+	// I vaut donc l'écriture effective
 	return i;
 }
 
@@ -57,9 +62,11 @@ long EcrireContenuBloc(tBloc bloc, unsigned char * contenu, long taille) {
 */
 long LireContenuBloc(tBloc bloc, unsigned char * contenu, long taille) {
 	long i = 0;
+	// S'arrête quand i dépasse la taille taille ou la taille d'un bloc
 	while (i < taille && i < TAILLE_BLOC) {
 		*(contenu + i) = bloc[i];
 		i++;
 	}
+	// i vaut donc la lecture effective
 	return i;
 }
