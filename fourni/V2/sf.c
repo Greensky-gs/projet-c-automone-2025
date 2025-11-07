@@ -7,6 +7,9 @@
 
 #include "sf.h"
 #include "bloc.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
 
 // Taille maximale du nom du SF (ou nom du disque)
 #define TAILLE_NOM_DISQUE 24
@@ -57,7 +60,22 @@ struct sSF
 * Sortie : le super-bloc, ou NULL en cas de problème
 */
 static tSuperBloc CreerSuperBloc(char nomDisque[]) {
-	// A COMPLETER
+	struct sSuperBloc * ptr = malloc(sizeof(struct sSuperBloc));
+	if (ptr == NULL) {
+		fprintf(stderr, "CreerSuperBloc : probleme creation\n");
+		return NULL;
+	}
+
+	// Compteur pour copie du nom du disque
+	int i = 0;
+	while (i < TAILLE_NOM_DISQUE) {
+		ptr->nomDisque[i] = nomDisque[i];
+		i++;
+	}
+	ptr->nomDisque[i] = '\0';
+	time(&(ptr->dateDerModif));
+
+	return ptr;
 }
 
 /* V2
@@ -67,7 +85,8 @@ static tSuperBloc CreerSuperBloc(char nomDisque[]) {
 * Sortie : aucune
 */
 static void DetruireSuperBloc(tSuperBloc *pSuperBloc) {
-	// A COMPLETER
+	free(*pSuperBloc);
+	*pSuperBloc = NULL;
 }
 
 /* V2
@@ -77,7 +96,7 @@ static void DetruireSuperBloc(tSuperBloc *pSuperBloc) {
 * Sortie : aucune
 */
 static void AfficherSuperBloc(tSuperBloc superBloc) {
-	// A COMPLETER
+	printf("{      Super Bloc\n    nom disque: %s\n    Dernière date de modification: %s\n}\n", superBloc->nomDisque, ctime(&superBloc->dateDerModif));
 }
 
 /* V2
@@ -86,7 +105,26 @@ static void AfficherSuperBloc(tSuperBloc superBloc) {
 * Retour : le système de fichiers créé, ou NULL en cas d'erreur
 */
 tSF CreerSF (char nomDisque[]){
-	// A COMPLETER
+	struct sSF * syst = malloc(sizeof(struct sSF));
+	if (syst == NULL) {
+		fprintf(stderr, "CreerSF : probleme creation\n");
+		perror("Erreur d'allocation de memoire pour le systeme");
+		return NULL;
+	}
+	tSuperBloc superBloc = CreerSuperBloc(nomDisque);
+	if (superBloc == NULL) {
+		fprintf(stderr, "CreerSF : probleme creation");
+		perror("Erreur d'allocation de memoire pour le superBloc dans la creation du systeme\n");
+		free(syst);
+		return NULL;
+	}
+
+	syst->superBloc=superBloc;
+	syst->listeInodes.nbInodes = 0;
+	syst->listeInodes.dernier = NULL;
+	syst->listeInodes.premier = NULL;
+
+	return syst;
 }
 
 /* V2
@@ -95,7 +133,9 @@ tSF CreerSF (char nomDisque[]){
 * Sortie : aucune
 */
 void DetruireSF(tSF *pSF) {
-	// A COMPLETER
+	DetruireSuperBloc(&(*pSF)->superBloc);
+	free(*pSF);
+	*pSF = NULL;
 }
 
 /* V2
