@@ -4,9 +4,10 @@ output=gerer_sf_v1
 deps=bloc.o inode.o
 RM=rm -f
 HREF=fourni/V1/bloc.h fourni/V1/inode.h
+SANITIZES=-fsanitize=address,undefined
 
 $(output): $(output).o $(deps)
-	$(CC) $(FLAGS) $(output).o $(deps) -o $(output).exe
+	$(CC) $(FLAGS) $(output).o $(deps) -o $(output).exe # $(SANITIZES)
 
 $(output).o: $(output).c $(HREF)
 	$(CC) $(FLAGS) -c $(output).c
