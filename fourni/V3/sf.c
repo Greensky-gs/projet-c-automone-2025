@@ -1,9 +1,9 @@
 /**
- * ProgC - Projet Automne 25-26 : Gestion de systèmes de fichiers
- * VERSION 3
- * Fichier : sf.c
- * Module de gestion d'un systèmes de fichiers (simulé)
- **/
+* ProgC - Projet Automne 25-26 : Gestion de systèmes de fichiers
+* VERSION 3
+* Fichier : sf.c
+* Module de gestion d'un systèmes de fichiers (simulé)
+**/
 
 #include "sf.h"
 #include "bloc.h"
@@ -14,10 +14,10 @@
 // Définition du super-bloc
 struct sSuperBloc
 {
-  // Le nom du disque (ou du système de fichiers) (avec le '\0')
-  char nomDisque[TAILLE_NOM_DISQUE+1];
-  // La date de dernière modification du système de fichiers
-  time_t dateDerModif;
+	// Le nom du disque (ou du système de fichiers) (avec le '\0')
+	char nomDisque[TAILLE_NOM_DISQUE+1];
+	// La date de dernière modification du système de fichiers
+	time_t dateDerModif;
 };
 
 // Type représentant le super-bloc
@@ -26,28 +26,28 @@ typedef struct sSuperBloc *tSuperBloc;
 // Définition de la liste chaînée des inodes
 struct sListeInodes
 {
-  // Références vers le premier et le dernier élément de la liste chaînée
-  struct sListeInodesElement *premier, *dernier;
-  // Nombre d'inodes dans la liste
-  int nbInodes;
+	// Références vers le premier et le dernier élément de la liste chaînée
+	struct sListeInodesElement *premier, *dernier;
+	// Nombre d'inodes dans la liste
+	int nbInodes;
 };
 
 // Définition d'un élement de la liste chaînée des inodes dans le SF
 struct sListeInodesElement
 {
-  // L'inode proprement dit
-  tInode inode;
-  // L'élément suivant dans la liste chaînée
-  struct sListeInodesElement *suivant;
+	// L'inode proprement dit
+	tInode inode;
+	// L'élément suivant dans la liste chaînée
+	struct sListeInodesElement *suivant;
 };
 
 // Définirion d'un système de fichiers (simplifié)
 struct sSF
 {
-  // Le super-bloc
-  tSuperBloc superBloc;
-  // La liste chaînée des inodes
-  struct sListeInodes listeInodes;
+	// Le super-bloc
+	tSuperBloc superBloc;
+	// La liste chaînée des inodes
+	struct sListeInodes listeInodes;
 };
 
 /* V2
@@ -56,7 +56,7 @@ struct sSF
 * Sortie : le super-bloc, ou NULL en cas de problème
 */
 static tSuperBloc CreerSuperBloc(char nomDisque[]) {
-  // A COMPLETER
+	// A COMPLETER
 }
 
 /* V2
@@ -65,7 +65,7 @@ static tSuperBloc CreerSuperBloc(char nomDisque[]) {
 * Sortie : aucune
 */
 static void DetruireSuperBloc(tSuperBloc *pSuperBloc) {
-  // A COMPLETER
+	// A COMPLETER
 }
 
 /* V2
@@ -74,71 +74,71 @@ static void DetruireSuperBloc(tSuperBloc *pSuperBloc) {
 * Sortie : aucune
 */
 static void AfficherSuperBloc(tSuperBloc superBloc) {
-  // A COMPLETER
+	// A COMPLETER
 }
 
 /* V2
- * Crée un nouveau système de fichiers.
- * Entrée : nom du disque à associer au système de fichiers créé
- * Retour : le système de fichiers créé, ou NULL en cas d'erreur
- */
+* Crée un nouveau système de fichiers.
+* Entrée : nom du disque à associer au système de fichiers créé
+* Retour : le système de fichiers créé, ou NULL en cas d'erreur
+*/
 tSF CreerSF (char nomDisque[]){
-  // A COMPLETER
+	// A COMPLETER
 }
 
 /* V2
- * Détruit un système de fichiers et libère la mémoire associée.
- * Entrée : le SF à détruire
- * Sortie : aucune
- */
+* Détruit un système de fichiers et libère la mémoire associée.
+* Entrée : le SF à détruire
+* Sortie : aucune
+*/
 void DetruireSF(tSF *pSF) {
-  // A COMPLETER
+	// A COMPLETER
 }
 
 /* V2
- * Affiche les informations relative à un système de fichiers i.e;
- * le contenu du super-bloc et celui des différents inodes du SF
- * Entrée : le SF à afficher
- * Sortie : aucune
- */
+* Affiche les informations relative à un système de fichiers i.e;
+* le contenu du super-bloc et celui des différents inodes du SF
+* Entrée : le SF à afficher
+* Sortie : aucune
+*/
 void AfficherSF (tSF sf){
-  // A COMPLETER
+	// A COMPLETER
 }
 
 /* V2
- * Ecrit un fichier d'un seul bloc dans le système de fichiers.
- * Entrées : le système de fichiers, le nom du fichier (sur disque) et son type dans le SF (simulé)
- * Sortie : le nombre d'octets effectivement écrits, -1 en cas d'erreur.
- */
+* Ecrit un fichier d'un seul bloc dans le système de fichiers.
+* Entrées : le système de fichiers, le nom du fichier (sur disque) et son type dans le SF (simulé)
+* Sortie : le nombre d'octets effectivement écrits, -1 en cas d'erreur.
+*/
 long Ecrire1BlocFichierSF(tSF sf, char nomFichier[], natureFichier type) {
-  // A COMPLETER
+	// A COMPLETER
 }
 
 /* V3
- * Ecrit un fichier (d'un nombre de blocs quelconque) dans le système de fichiers.
- * Si la taille du fichier à écrire dépasse la taille maximale d'un fichier dans le SF(10 x 64 octets),
- * seuls les 640 premiers octets seront écrits dans le système de fichiers.
- * Entrées : le système de fichiers, le nom du fichier (sur disque) et son type dans le SF (simulé)
- * Sortie : le nombre d'octets effectivement écrits, -1 en cas d'erreur.
- */
+* Ecrit un fichier (d'un nombre de blocs quelconque) dans le système de fichiers.
+* Si la taille du fichier à écrire dépasse la taille maximale d'un fichier dans le SF(10 x 64 octets),
+* seuls les 640 premiers octets seront écrits dans le système de fichiers.
+* Entrées : le système de fichiers, le nom du fichier (sur disque) et son type dans le SF (simulé)
+* Sortie : le nombre d'octets effectivement écrits, -1 en cas d'erreur.
+*/
 long EcrireFichierSF(tSF sf, char nomFichier[], natureFichier type) {
-  // A COMPLETER
+	// A COMPLETER
 }
 
 /* V3
- * Sauvegarde un système de fichiers dans un fichier (sur disque).
- * Entrées : le système de fichiers, le nom du fichier sauvegarde (sur disque)
- * Sortie : 0 en cas de succèe, -1 en cas d'erreur
- */
+* Sauvegarde un système de fichiers dans un fichier (sur disque).
+* Entrées : le système de fichiers, le nom du fichier sauvegarde (sur disque)
+* Sortie : 0 en cas de succèe, -1 en cas d'erreur
+*/
 int SauvegarderSF(tSF sf, char nomFichier[]) {
-  // A COMPLETER
+	// A COMPLETER
 }
 
 /* V3
- * Restaure le contenu d'un système de fichiers depuis un fichier sauvegarde (sur disque).
- * Entrées : le système de fichiers où restaurer, le nom du fichier sauvegarde (sur disque)
- * Sortie : 0 en cas de succèe, -1 en cas d'erreur
- */
+* Restaure le contenu d'un système de fichiers depuis un fichier sauvegarde (sur disque).
+* Entrées : le système de fichiers où restaurer, le nom du fichier sauvegarde (sur disque)
+* Sortie : 0 en cas de succèe, -1 en cas d'erreur
+*/
 int ChargerSF(tSF *pSF, char nomFichier[]) {
-  // A COMPLETER
+	// A COMPLETER
 }
