@@ -177,8 +177,16 @@ void AfficherInode(tInode inode) {
 	tBloc lecture = CreerBloc();
 	LireDonneesInode1bloc(inode, lecture, TAILLE_BLOC);
 
+	char gabarit[TAILLE_TAILLE_BLOC + 4];
+	sprintf(gabarit, "%%.%ds", TAILLE_BLOC);
+	
+	char contenu[TAILLE_BLOC + 1];
+	sprintf(contenu, gabarit, lecture);
+
 	// Joli affichage sous forme d'objet javascript (sans couleur mais ça pourrait)
-	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s\n    contenu: %s\n}\n", Numero(inode), type, typeText, Taille(inode), ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode), lecture);
+	// L'utilisation du gabarit sert à afficher les x (64) premiers caractères de la chaine car il pourrait être non-nul terminé, depuis le chargement du fichier.
+	// J'ai choisit de ne pas remplacer le dernier caractère par \0 dans Ecrire1BlocFichierSF car j'ai choisit d'avoir le fichier continu de manière discontinue (si il est sur plusieurs blocs, il ne doit pas être interrompu par des \0), donc on s'adapte dans l'affichage et dans l'utilisation
+	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s\n    contenu: %s\n}\n", Numero(inode), type, typeText, Taille(inode), ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode), contenu);
 	DetruireBloc(&lecture);
 }
 
