@@ -180,6 +180,7 @@ void AfficherSF (tSF sf){
 			AfficherInode(suivant->inode);
 	
 			suivant = suivant->suivant;
+			i++;
 		}
 	} else {
 		printf("Aucun inode\n");
