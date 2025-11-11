@@ -182,7 +182,13 @@ void AfficherInode(tInode inode) {
 
 	// Joli affichage sous forme d'objet javascript (sans couleur mais ça pourrait)
 	// Je rapelle que j'ai choisit de ne pas remplacer le dernier caractère par \0 dans Ecrire1BlocFichierSF car j'ai choisit d'avoir le fichier continu de manière discontinue (si il est sur plusieurs blocs, il ne doit pas être interrompu par des \0), donc on s'adapte dans l'affichage et dans l'utilisation (ici contenuTotal est forcément nul-terminé grâce à la ligne du dessus, donc on peut l'afficher sans déclencher de stack-buffer-overflow)
-	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s\n    contenu: %s\n}\n", Numero(inode), type, typeText, taille, ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode), contenuTotal);
+	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s", Numero(inode), type, typeText, taille, ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode));
+
+	if (inode->taille == 0) {
+		printf("\n    L'inode est vide\n}\n");
+	} else {
+		printf("\n    contenu: %s\n}\n", contenuTotal);
+	}
 
 	free(contenuTotal);
 }
