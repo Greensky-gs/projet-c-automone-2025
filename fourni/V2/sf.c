@@ -140,9 +140,10 @@ void DetruireSF(tSF *pSF) {
 		struct sListeInodesElement * temp = NULL;
 
 		while (*suivant != NULL) {
+			struct sListeInodesElement * supprimer = *suivant;
   			DetruireInode(&((*suivant)->inode));
 			temp = (*suivant)->suivant;
-			free(*suivant);
+			free(supprimer);
 
 			if (temp == NULL) {
 				*suivant = NULL;
@@ -227,6 +228,7 @@ long Ecrire1BlocFichierSF(tSF sf, char nomFichier[], natureFichier type) {
 		fclose(fichier);
 		return -1;
 	}
+
 	ptr->inode = inode;
 	ptr->suivant = NULL;
 
