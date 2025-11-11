@@ -5,7 +5,25 @@
 #include "fourni/V3/sf.h"
 
 int main() {
-// int testAffichageInodeVide() {
+// int testEcrireSF() {
+    tSF sf = CreerSF("SSD");
+
+    AfficherSF(sf);
+
+    EcrireFichierSF(sf, "LICENSE", ORDINAIRE);
+
+    AfficherSF(sf);
+
+    EcrireFichierSF(sf, "README.md", ORDINAIRE); // Attention, ce fichier est de taille 640, mais il ne contient pas 640 caractères, c'est à cause du fait que certains caractères ne tiennent pas sur un unsigned char. Coup de bol, il s'affiche correctement, mais il n'y a que 626 caractères
+
+    AfficherSF(sf);
+
+    DetruireSF(&sf);
+    return 0;
+}
+
+// int main() {
+int testAffichageInodeVide() {
     tInode inode = CreerInode(0, ORDINAIRE);
 
     AfficherInode(inode);
