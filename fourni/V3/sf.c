@@ -297,6 +297,13 @@ long EcrireFichierSF(tSF sf, char nomFichier[], natureFichier type) {
 	}
 
 	struct sListeInodesElement * element = malloc(sizeof(struct sListeInodesElement));
+	if (element == NULL) {
+		perror("EcritureFichierSF : Erreur allocation nouvel inode");
+		DetruireInode(&inode);
+		fclose(flux);
+		free(contenu);
+		return -1;
+	}
 	element->inode = inode;
 	element->suivant = NULL;
 
