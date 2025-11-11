@@ -5,7 +5,21 @@
 #include "fourni/V3/sf.h"
 
 int main() {
-// int testAffichageInodeVide() {
+// int testEcrireSF() {
+    tSF sf = CreerSF("SSD");
+
+    AfficherSF(sf);
+
+    EcrireFichierSF(sf, "LICENSE", ORDINAIRE);
+
+    AfficherSF(sf);
+
+    DetruireSF(&sf);
+    return 0;
+}
+
+// int main() {
+int testAffichageInodeVide() {
     tInode inode = CreerInode(0, ORDINAIRE);
 
     AfficherInode(inode);
