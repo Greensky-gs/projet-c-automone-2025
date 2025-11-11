@@ -224,8 +224,25 @@ long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) 
 * des données à lire et le décalage à appliquer (voir énoncé)
 * Sortie : le nombre d'octets effectivement lus, 0 si le décalage est au-delà de la taille
 */
-long LireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage) {
-	// A COMPLETER
+long LireDonneesInode(tInode inode, unsigned char * contenu, long taille, long decalage) {
+	int i = decalage / TAILLE_BLOC; // On initialise l'indice du bloc par le quotient de decalage par bloc : 0 si decalage < 64, 1 si decalage < 128 ...
+	int c = decalage % TAILLE_BLOC; // On initialise l'indice du caractère du bloc par le reste de decalage par bloc : decalage si decalage < 64n decalage - 64 si decalage < 128 ...
+	int index = 0; // La variable est redondante, on pourrait remplacer ses occurences par i * TAILLE_BLOC + c, mais il faudrait rajouter des cycles de calcul lors de l'exécution, on va la laisser pour "l'optimisation"
+
+	while (index < taille && index < TAILLE_BLOC * NB_BLOCS_DIRECTS) {
+		unsigned char car = inode->blocDonnees[i][c];
+
+		contenu[index] = car;
+
+		c++;
+		if (c == TAILLE_BLOC) {
+			c = 0;
+			i++;
+		}
+		index++;
+	}
+
+	return index;
 }
 
 /* V3
@@ -235,7 +252,29 @@ long LireDonneesInode(tInode inode, unsigned char *contenu, long taille, long de
 * Sortie : le nombre d'octets effectivement écrits, ou -1 en cas d'erreur
 */
 long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage) {
-	// A COMPLETER
+	// Bon, mêmes commentaires que LireDonneesInode, c'est essnetiellement le même algorithme
+	int i = decalage / TAILLE_BLOC;
+	int c = decalage % TAILLE_BLOC;
+	int index = 0;
+
+	while (index < taille && index < TAILLE_BLOC * NB_BLOCS_DIRECTS) {
+		inode->blocDonnees[i][c] = contenu[index];
+
+		c++;
+		if (c == TAILLE_BLOC) {
+			c = 0;
+			i++;
+		}
+		index++;
+	}
+
+	// Ici on remplace, comme le ferait un véritable système de fichiers, la taille par la nouvelle taille : si elle est plus grande que l'ancienne, elle la remplace, sinon elle ne change pas.
+	// On fait ça car c'est plus ou moins ce que ferait le fichier : on change X bits au milieu du fichier, mais en gardant la fin (quand même)
+	inode->taille = inode->taille > decalage + index ? inode->taille : decalage + index;
+	// Une autre implémentation serait la suivante :
+	// inode->taille = decalage + index; // On remplace la taille du fichier par ce qu'on a écrit
+
+	return index;
 }
 
 // Fonction qui modifie resultat pour tracer les erreurs dans SauvegarderInode
@@ -307,6 +346,7 @@ int ChargerInode(tInode *pInode, FILE *fichier) {
 	
 	int i = 0;
 	while (i < NB_BLOCS_DIRECTS) {
+		// On charge chaque bloc
 		int res = ChargerBloc((*pInode)->blocDonnees[i], TAILLE_BLOC, fichier);
 		if (res == -1) {
 			perror("ChargerInode : Erreur chargement blocs");
