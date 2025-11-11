@@ -187,7 +187,7 @@ void AfficherInode(tInode inode) {
 	if (inode->taille == 0) {
 		printf("\n    L'inode est vide\n}\n");
 	} else {
-		printf("\n    contenu: %s\n}\n", contenuTotal);
+		printf("\n    contenu:\n%s\n}\n", contenuTotal);
 	}
 
 	free(contenuTotal);
