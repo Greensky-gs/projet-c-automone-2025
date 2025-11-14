@@ -6,6 +6,8 @@
 **/
 #include "inode.h"
 #include "bloc.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 #define NB_BLOCS_DIRECTS 10
 
@@ -30,7 +32,38 @@ struct sInode
 * Retour : l'inode créé ou NULL en cas de problème
 */
 tInode CreerInode(int numInode, natureFichier type) {
-	// A COMPLETER
+	// Allocation dynamique d'un espace pour l'inode
+	struct sInode * iNode = malloc(sizeof(struct sInode));
+	if (iNode == NULL) {
+		// Problème de création -> stderr
+		fprintf(stderr, "CreerInode : Probleme creation");
+		return NULL;
+	}
+
+	// Variables spécifiées
+	iNode->numero = numInode;
+	iNode->type = type;
+	iNode->taille=0; // Taille à 0 par défaut
+
+	// Variables par défaut
+	time(&(iNode->dateDerAcces));
+	time(&(iNode->dateDerModif));
+	time(&(iNode->dateDerModifInode));
+
+	// Création des NB_BLOCS_DIRECTS lors de la création de l'inode
+	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
+		tBloc bloc = CreerBloc();
+		if (bloc == NULL) {
+			// problème sur un bloc = problème sur l'inode -> arrêt de la fonction
+			fprintf(stderr, "CreerInode : probleme creaation");
+			perror("Erreur lors de la creation des blocs de donnees");
+
+			return NULL;
+		}
+		iNode->blocDonnees[k] = bloc;
+	}
+
+	return iNode;
 }
 
 /* V1
@@ -39,7 +72,24 @@ tInode CreerInode(int numInode, natureFichier type) {
 * Retour : aucun
 */
 void DetruireInode(tInode *pInode) {
-	// A COMPLETER
+	// D'abord détruire les NB_BLOCS_DIRECTS
+	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
+		DetruireBloc(&(*pInode)->blocDonnees[k]);
+	}
+	// Libération et pointage sur NULL
+	free(*pInode);
+	*pInode = NULL;
+}
+
+// 3 fonctions statiques de modification des dates
+static void ActualiserDateDerAccess(tInode inode) {
+	time(&(inode->dateDerAcces));
+}
+static void ActualiserDateDerModif(tInode inode) {
+	time(&(inode->dateDerModif));
+}
+static void ActualiserDateDerModifInode(tInode inode) {
+	time(&(inode->dateDerModifInode));
 }
 
 /* V1
@@ -48,7 +98,11 @@ void DetruireInode(tInode *pInode) {
 * Retour : la date de dernier accès à l'inode
 */
 time_t DateDerAcces(tInode inode) {
-	// A COMPLETER
+	// On récupère avant d'actualiser, autrement on perd l'information
+	time_t date = inode->dateDerAcces;
+	ActualiserDateDerAccess(inode);
+
+	return date;
 }
 
 /* V1
@@ -57,7 +111,8 @@ time_t DateDerAcces(tInode inode) {
 * Retour : la date de dernière modification de l'inode
 */
 time_t DateDerModif(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->dateDerModifInode;
 }
 
 /* V1
@@ -66,7 +121,8 @@ time_t DateDerModif(tInode inode) {
 * Retour : la date de dernière modification du fichier associé à l'inode
 */
 time_t DateDerModifFichier(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->dateDerModif;
 }
 
 /* V1
@@ -75,7 +131,8 @@ time_t DateDerModifFichier(tInode inode) {
 * Retour : le numéro de l'inode
 */
 unsigned int Numero(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->numero;
 }
 
 /* V1
@@ -84,7 +141,8 @@ unsigned int Numero(tInode inode) {
 * Retour : la taille en octets du fichier associé à l'inode
 */
 long Taille(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->taille;
 }
 
 /* V1
@@ -93,7 +151,8 @@ long Taille(tInode inode) {
 * Retour : le type du fichier associé à l'inode
 */
 natureFichier Type(tInode inode) {
-	// A COMPLETER
+	ActualiserDateDerAccess(inode);
+	return inode->type;
 }
 
 /* V1 et V3
@@ -102,7 +161,36 @@ natureFichier Type(tInode inode) {
 * Retour : aucun
 */
 void AfficherInode(tInode inode) {
-	// A COMPLETER
+	// On récupère la dernière date d'accès avant toute autre chose sinon on perd l'information
+	time_t derAccess = DateDerAcces(inode);
+	time_t derModifFichier = DateDerModifFichier(inode);
+	time_t derModifInode = DateDerModif(inode);
+	long taille = Taille(inode);
+
+	natureFichier type = Type(inode);
+	char * typeText = type == ORDINAIRE ? "Ordinaire" : type == REPERTOIRE ? "Repertoire" : type == AUTRE ? "Autre" : "never";
+
+	unsigned char * contenuTotal = malloc(NB_BLOCS_DIRECTS * TAILLE_BLOC + 1);
+	contenuTotal[NB_BLOCS_DIRECTS * TAILLE_BLOC] = '\0';
+
+	int i = 0;
+	while (i < NB_BLOCS_DIRECTS && i * TAILLE_BLOC < taille) {
+		LireContenuBloc(inode->blocDonnees[i], &contenuTotal[i * TAILLE_BLOC], TAILLE_BLOC);
+		i++;
+	}
+	contenuTotal[i * TAILLE_BLOC] = '\0';
+
+	// Joli affichage sous forme d'objet javascript (sans couleur mais ça pourrait)
+	// Je rapelle que j'ai choisit de ne pas remplacer le dernier caractère par \0 dans Ecrire1BlocFichierSF car j'ai choisit d'avoir le fichier continu de manière discontinue (si il est sur plusieurs blocs, il ne doit pas être interrompu par des \0), donc on s'adapte dans l'affichage et dans l'utilisation (ici contenuTotal est forcément nul-terminé grâce à la ligne du dessus, donc on peut l'afficher sans déclencher de stack-buffer-overflow)
+	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s", Numero(inode), type, typeText, taille, ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode));
+
+	if (inode->taille == 0) {
+		printf("\n    L'inode est vide\n}\n");
+	} else {
+		printf("\n    contenu:\n%s\n}\n", contenuTotal);
+	}
+
+	free(contenuTotal);
 }
 
 /* V1
@@ -112,7 +200,11 @@ void AfficherInode(tInode inode) {
 * Retour : le nombre d'octets effectivement écrits dans l'inode ou -1 en cas d'erreur
 */
 long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
-	// A COMPLETER
+	// On utilise simplement la fonction de lecture d'un bloc sur le premier bloc
+	long octets_lus = LireContenuBloc(inode->blocDonnees[0], contenu, taille);
+	ActualiserDateDerAccess(inode); // Modification de la date d'accès au fichier, pusiqu'il a été lu
+
+	return octets_lus;
 }
 
 /* V1
@@ -122,7 +214,14 @@ long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
 * Retour : le nombre d'octets effectivement lus dans l'inode ou -1 en cas d'erreur
 */
 long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
-	// A COMPLETER
+	// On utlise simplement la fonction d'écriture sur le premier bloc
+	long octets_ecrits = EcrireContenuBloc(inode->blocDonnees[0], contenu, taille);
+	ActualiserDateDerModif(inode); // Modification de la date de modification du fichier car il a été écrit
+
+	inode->taille = octets_ecrits; // La taille a également changé
+	ActualiserDateDerModifInode(inode); // Donc on modifie la date de modification de l'inode
+	return octets_ecrits;
+	
 }
 
 /* V3
@@ -131,8 +230,25 @@ long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) 
 * des données à lire et le décalage à appliquer (voir énoncé)
 * Sortie : le nombre d'octets effectivement lus, 0 si le décalage est au-delà de la taille
 */
-long LireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage) {
-	// A COMPLETER
+long LireDonneesInode(tInode inode, unsigned char * contenu, long taille, long decalage) {
+	int i = decalage / TAILLE_BLOC; // On initialise l'indice du bloc par le quotient de decalage par bloc : 0 si decalage < 64, 1 si decalage < 128 ...
+	int c = decalage % TAILLE_BLOC; // On initialise l'indice du caractère du bloc par le reste de decalage par bloc : decalage si decalage < 64n decalage - 64 si decalage < 128 ...
+	int index = 0; // La variable est redondante, on pourrait remplacer ses occurences par i * TAILLE_BLOC + c, mais il faudrait rajouter des cycles de calcul lors de l'exécution, on va la laisser pour "l'optimisation"
+
+	while (index < taille && index < TAILLE_BLOC * NB_BLOCS_DIRECTS) {
+		unsigned char car = inode->blocDonnees[i][c];
+
+		contenu[index] = car;
+
+		c++;
+		if (c == TAILLE_BLOC) {
+			c = 0;
+			i++;
+		}
+		index++;
+	}
+
+	return index;
 }
 
 /* V3
@@ -142,7 +258,35 @@ long LireDonneesInode(tInode inode, unsigned char *contenu, long taille, long de
 * Sortie : le nombre d'octets effectivement écrits, ou -1 en cas d'erreur
 */
 long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long decalage) {
-	// A COMPLETER
+	// Bon, mêmes commentaires que LireDonneesInode, c'est essnetiellement le même algorithme
+	int i = decalage / TAILLE_BLOC;
+	int c = decalage % TAILLE_BLOC;
+	int index = 0;
+
+	while (index < taille && index < TAILLE_BLOC * NB_BLOCS_DIRECTS) {
+		inode->blocDonnees[i][c] = contenu[index];
+
+		c++;
+		if (c == TAILLE_BLOC) {
+			c = 0;
+			i++;
+		}
+		index++;
+	}
+
+	// Ici on remplace, comme le ferait un véritable système de fichiers, la taille par la nouvelle taille : si elle est plus grande que l'ancienne, elle la remplace, sinon elle ne change pas.
+	// On fait ça car c'est plus ou moins ce que ferait le fichier : on change X bits au milieu du fichier, mais en gardant la fin (quand même)
+	inode->taille = inode->taille > decalage + index ? inode->taille : decalage + index;
+	// Une autre implémentation serait la suivante :
+	// inode->taille = decalage + index; // On remplace la taille du fichier par ce qu'on a écrit
+
+	return index;
+}
+
+// Fonction qui modifie resultat pour tracer les erreurs dans SauvegarderInode
+// Au final, resultat vaudra le nombre d'erreurs rencontrées
+static void resultatIncrementeur(int * resultat, int retour) {
+	*resultat = *resultat + (retour == EOF ? 1 : 0);
 }
 
 /* V3
@@ -151,8 +295,44 @@ long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long 
 * Entrées : l'inode concerné, l'identificateur du fichier
 * Sortie : 0 en cas de succès, -1 en cas d'erreur
 */
-int SauvegarderInode(tInode inode, FILE *fichier) {
-	// A COMPLETER
+int SauvegarderInode(tInode inode, FILE * fichier) {
+	// On va stocker toutes les informations qu'on peut sauvegarder ligne par ligne en premier (dates, nombre de blocs, etc)
+	char tampon[34] = {0}; // On met 34, mais y'aura certainement besoin de moins en runtime
+	int resultat = 0;
+	int * ptr = &resultat;
+
+	sprintf(tampon, "%ld\n", inode->dateDerAcces);
+	resultatIncrementeur(ptr, fputs(tampon, fichier));
+	sprintf(tampon, "%ld\n", inode->dateDerModif);
+	resultatIncrementeur(ptr, fputs(tampon, fichier));
+	sprintf(tampon, "%ld\n", inode->dateDerModifInode);
+	resultatIncrementeur(ptr, fputs(tampon, fichier));
+	sprintf(tampon, "%d\n", inode->numero);
+	resultatIncrementeur(ptr, fputs(tampon, fichier));
+	sprintf(tampon, "%ld\n", inode->taille);
+	resultatIncrementeur(ptr, fputs(tampon, fichier));
+	sprintf(tampon, "%d\n", inode->type); // natureFicher, c'est jamais qu'un entier
+	resultatIncrementeur(ptr, fputs(tampon, fichier));
+
+	if (resultat > 0) {
+		perror("SauvegarderInode : Au moins une erreur a eu lieu lors de l'ecriture des donnees statiques");
+		return -1;
+	}
+	// C'est toutes les données qu'on peut représenter ligne par ligne sans avoir à se soucier du fait qu'on pourrait avoir un retour à la ligne à cause du contenu
+
+	// Enregistrement des blocs
+	int i = 0;
+	while (i < NB_BLOCS_DIRECTS) {
+		tBloc bloc = inode->blocDonnees[i];
+		int res = SauvegarderBloc(bloc, TAILLE_BLOC, fichier);
+		if (res == -1) {
+			perror("SauvegarderInode : Erreur enregistrement blocs");
+			return -1;
+		}
+		i++;
+	}
+
+	return 0;
 }
 
 /* V3
@@ -162,7 +342,26 @@ int SauvegarderInode(tInode inode, FILE *fichier) {
 * Sortie : 0 en cas de succès, -1 en cas d'erreur
 */
 int ChargerInode(tInode *pInode, FILE *fichier) {
-	// A COMPLETER
+	// On peut utiliser un scanf avec une format un peu balèze pour récupérer les données
+	int res = fscanf(fichier, "%ld\n%ld\n%ld\n%d\n%ld\n%d\n", &(*pInode)->dateDerAcces, &(*pInode)->dateDerModif, &(*pInode)->dateDerModifInode, &(*pInode)->numero, &(*pInode)->taille, (int *)&(*pInode)->type); // L'appel est infâme
+
+	if (res != 6) {
+		perror("ChargerInode : toutes les proprietes n'ont pas pu etre trouvees");
+		return -1;
+	}
+	
+	int i = 0;
+	while (i < NB_BLOCS_DIRECTS && i * TAILLE_BLOC < (*pInode)->taille) {
+		// On charge chaque bloc
+		int res = ChargerBloc((*pInode)->blocDonnees[i], (*pInode)->taille - (i * TAILLE_BLOC), fichier);
+		if (res == -1) {
+			perror("ChargerInode : Erreur chargement blocs");
+			return -1;
+		}
+		i++;
+	}
+
+	return 0;
 }
 
 /* V4

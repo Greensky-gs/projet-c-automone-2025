@@ -5,21 +5,71 @@
 * Module de gestion d'un répertoire d'un systèmes de fichiers (simulé)
 **/
 #include "repertoire.h"
+#include "bloc.h"
+#include "inode.h"
+#include "sf.h"
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
 
 // Définition d'un répertoire
-struct sRepertoire
-{
-	tEntreesRepertoire *table;
+struct sRepertoire {
+	tEntreesRepertoire * table;
 };
+
+unsigned long tailleEntreesTab() {
+    return ((TAILLE_BLOC * 10) / (TAILLE_NOM_FICHIER + sizeof(unsigned int)));
+}
 
 /* V4
 * Crée un nouveau répertoire.
 * Entrée : aucune
 * Sortie : le répertoire créé, ou NULL si problème
 */
-tRepertoire CreerRepertoire(void)
-{
-	// A COMPLETER
+tRepertoire CreerRepertoire(void) {
+	struct sRepertoire * rep = malloc(sizeof(struct sRepertoire));
+	if (rep == NULL) {
+		perror("CreerRepertoire : probleme creation");
+		return NULL;
+	}
+
+    struct sEntreesRepertoire ** entreeRep = calloc(tailleEntreesTab(), sizeof(struct sEntreesRepertoire));
+    if (entreeRep == NULL) {
+		perror("CreerRepertoire : probleme creation");
+		fprintf(stderr, "Erreur d'allocation de memoire pour l'entree repertoire\n");
+		free(rep);
+		return NULL;
+	}
+	int i = 0;
+	int error = 0;
+	while (i < tailleEntreesTab() && error == 0) {
+		struct sEntreesRepertoire * ptr = malloc(sizeof(struct sEntreesRepertoire));
+		if (ptr == NULL) {
+			perror("CreerRepertoire : probleme creation");
+			fprintf(stderr, "Erreur d'allocation de memoire pour case entrees repertoire\n");
+			error = 1;
+			continue;
+		}
+		ptr->nomEntree[0] = '\0';
+		ptr->numeroInode = 0;
+		entreeRep[i] = ptr;
+		i++;
+	}
+
+	if (error) {
+		int j = 0;
+		while (j < i) {
+			free(entreeRep[j]);
+			j++;
+		}
+		free(entreeRep);
+		free(rep);
+		return NULL;
+	}
+
+	rep->table = entreeRep;
+
+	return rep;
 }
 
 /* V4
@@ -27,9 +77,41 @@ tRepertoire CreerRepertoire(void)
 * Entrée : le répertoire à détruire
 * Sortie : aucune
 */
-void DetruireRepertoire(tRepertoire *pRep)
-{
-	// A COMPLETER
+void DetruireRepertoire(tRepertoire *pRep) {
+	int i = 0;
+	while (i < tailleEntreesTab()) {
+		free((*pRep)->table[i]);
+		i++;
+	}
+	free((*pRep)->table);
+	free((*pRep));
+	*pRep = NULL;
+}
+
+// Renvoie 1 si les deux textes sont égaux, renvoie 0 sinon
+// Max est le nombre d'itérations possibles
+static int compStr(char * a, char * b, int max) {
+	int i = 0;
+	int eq = 1;
+	while (a[i] != '\0' && b[i] != '\n' && eq && i < max) {
+		if (a[i] != b[i]) {
+			eq = 0;
+		}
+		i++;
+	}
+	eq = a[i] == b[i];
+
+	return eq;
+}
+// Copie le texte source à l'emplacement target
+// Max est le nombre maximum d'itérations
+static void copyStr(char * target, char * source) {
+	int i = 0;
+	while (source[i] != '\0') {
+		target[i] = source[i];
+		i++;
+	}
+	target[i] = '\0';
 }
 
 /* V4
@@ -40,9 +122,33 @@ void DetruireRepertoire(tRepertoire *pRep)
 *           le numéro d'inode associé à l'entrée
 * Retour : 0 si l'entrée est écrite avec succès, -1 en cas d'erreur
 */
-int EcrireEntreeRepertoire(tRepertoire rep, char nomEntree[], unsigned int numeroInode)
-{
-	// A COMPLETER
+int EcrireEntreeRepertoire(tRepertoire rep, char nomEntree[], unsigned int numeroInode) {
+	int found = 0;
+	int index = 0;
+	int taille = tailleEntreesTab();
+	int firstNul = -1;
+	while (found == 0 && index < taille) {
+		if (firstNul == -1 && rep->table[index]->nomEntree[0] == '\0') {
+			firstNul = index;
+		}
+		if (compStr(rep->table[index]->nomEntree, nomEntree, TAILLE_NOM_FICHIER + 1)) {
+			rep->table[index]->numeroInode = numeroInode;
+			found = 1;
+		}
+		index++;
+	}
+	if (!found) {
+		if (firstNul == -1) {
+			// Il n'y a plus de place dans le répertoire pour y écrire un fichier
+			perror("EcrireEntreeRepertoire : Espace insuffisant");
+			return -1;
+		}
+
+		rep->table[firstNul]->numeroInode = numeroInode;
+		copyStr(rep->table[firstNul]->nomEntree, nomEntree);
+		return 0;
+	}
+	return 0;
 }
 
 /* V4
@@ -51,8 +157,7 @@ int EcrireEntreeRepertoire(tRepertoire rep, char nomEntree[], unsigned int numer
 *           l'inode source.
 * Retour : 0 si le répertoire est lu avec succès, -1 en cas d'erreur
 */
-int LireRepertoireDepuisInode(tRepertoire *pRep, tInode inode)
-{
+int LireRepertoireDepuisInode(tRepertoire *pRep, tInode inode) {
 	// A COMPLETER
 }
 
@@ -81,9 +186,12 @@ int EntreesContenuesDansRepertoire(tRepertoire rep, struct sEntreesRepertoire ta
 * Entrée : le répertoire source
 * Retour : le nombre d'entrées du répertoire
 */
-int NbEntreesRepertoire(tRepertoire rep)
-{
-	// A COMPLETER
+int NbEntreesRepertoire(tRepertoire rep) {
+	int i = 0;
+	while (i < tailleEntreesTab() && rep->table[i]->nomEntree[0] != '\0') {
+		i++;
+	}
+	return i;
 }
 
 /* V4
@@ -91,7 +199,12 @@ int NbEntreesRepertoire(tRepertoire rep)
 * Entrée : le répertoire à afficher
 * Retour : aucun
 */
-void AfficherRepertoire(tRepertoire rep)
-{
-	// A COMPLETER
+void AfficherRepertoire(tRepertoire rep) {
+	printf("===========[REPERTOIRE]===========\n");
+	int i = 0;
+	while (i < tailleEntreesTab() && rep->table[i]->nomEntree[0] != '\0') {
+		printf("%s : inode %d\n", rep->table[i]->nomEntree, rep->table[i]->numeroInode);
+		i++;
+	}
+	printf("==================================\n");
 }

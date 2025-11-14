@@ -6,6 +6,8 @@
 **/
 
 #include "bloc.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 // Dans le .h : typedef unsigned char *tBloc;
 
@@ -15,7 +17,14 @@
 * Retour : le bloc créé ou NULL en cas de problème
 */
 tBloc CreerBloc (void) {
-	// A COMPLETER
+	// Allocation de TAILLE_BLOC octets
+	tBloc ref = calloc(sizeof(unsigned char), TAILLE_BLOC); // On utilise calloc pour avoir des bits initialisés à 0, c'est mieux
+	if (ref == NULL) {
+		// Erreur dans stderr
+		fprintf(stderr, "CreerBloc : probleme creation");
+		return NULL;
+	}
+	return ref;
 }
 
 /* V1
@@ -23,8 +32,10 @@ tBloc CreerBloc (void) {
 * Entrée : le bloc à détruire (libération mémoire allouée)
 * Retour : aucun
 */
-void DetruireBloc(tBloc *pBloc){
-	// A COMPLETER
+void DetruireBloc(tBloc *pBloc) {
+	// Libération et pointage vers NULL
+	free(*pBloc);
+	*pBloc = NULL;
 }
 
 /* V1
@@ -33,8 +44,16 @@ void DetruireBloc(tBloc *pBloc){
 * Entrées : le bloc, l'adresse du contenu à copier et sa taille en octets
 * Retour : le nombre d'octets effectivement écrits dans le bloc
 */
-long EcrireContenuBloc (tBloc bloc, unsigned char *contenu, long taille){
-	// A COMPLETER
+long EcrireContenuBloc (tBloc bloc, unsigned char *contenu, long taille) {
+	long i = 0;
+	// S'arrête quand i dépasse la taille taille ou la taille d'un bloc
+	while (i < taille && i < TAILLE_BLOC) {
+		bloc[i] = contenu[i];
+		i++;
+	}
+
+	// I vaut donc l'écriture effective
+	return i;
 }
 
 /* V1
@@ -43,8 +62,15 @@ long EcrireContenuBloc (tBloc bloc, unsigned char *contenu, long taille){
 * Entrées : le bloc, l'adresse contenu à laquelle recopier et la taille en octets du bloc
 * Retour : le nombre d'octets effectivement lus dans le bloc
 */
-long LireContenuBloc(tBloc bloc, unsigned char *contenu, long taille){
-	// A COMPLETER
+long LireContenuBloc(tBloc bloc, unsigned char *contenu, long taille) {
+	long i = 0;
+	// S'arrête quand i dépasse la taille taille ou la taille d'un bloc
+	while (i < taille && i < TAILLE_BLOC) {
+		*(contenu + i) = bloc[i];
+		i++;
+	}
+	// i vaut donc la lecture effective
+	return i;
 }
 
 /* V3
@@ -53,7 +79,19 @@ long LireContenuBloc(tBloc bloc, unsigned char *contenu, long taille){
 * Retour : 0 en cas de succès, -1 en cas d'erreur
 */
 int SauvegarderBloc(tBloc bloc, long taille, FILE *fichier){
-	// A COMPLETER
+	unsigned char lecture[TAILLE_BLOC + 1] = {0}; // On créé un tableau car on va avoir besoin de rajouter le caractère nul, car le contenu pourrait être non-nul terminé
+	// Remarque : Le caractère nul est ajouté par défaut à l'initialisation, et il ne sera jamais écrasé
+
+	LireContenuBloc(bloc, lecture, taille); // On remarque ici que le contenu copié maximal est TAILLE_BLOC puisque c'est le maximum de LireContenuBloc
+
+	long result = fputs((const char *)lecture, fichier);
+	if (result == EOF) {
+		perror("SauvegarderBloc : Erreur ecriture");
+		return -1;
+	}
+
+	// On ne ferme pas le fichier, car il a été ouvert par l'appellant, on peut donc supposer qu'il sera fermé par l'appellant
+	return 0;
 }
 
 /* V3
@@ -62,5 +100,15 @@ int SauvegarderBloc(tBloc bloc, long taille, FILE *fichier){
 * Retour : 0 en cas de succès, -1 en cas d'erreur
 */
 int ChargerBloc(tBloc bloc, long taille, FILE *fichier){
-	// A COMPLETER
+	unsigned char lecture[TAILLE_BLOC] = {0}; // On crée un tableau vide de taille exactement TAILLE_BLOC car on pourra spécifier la taille plus tard
+
+	size_t lus = fread(lecture, 1, taille > TAILLE_BLOC ? TAILLE_BLOC : taille, fichier);
+	if (lus == 0 && ferror(fichier)) { // La lecture n'a rien donné ET une erreur a eu lieu
+		perror("ChargerBloc : Erreur lecture fichier. Abandon.");
+		// On ne ferme pas le fichier car c'est à l'appellant de le faire
+		return -1;
+	}
+
+	EcrireContenuBloc(bloc, lecture, lus); // lus vaut au plus TAILLE_BLOC
+	return 0;
 }
