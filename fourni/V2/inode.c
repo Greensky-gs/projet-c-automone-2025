@@ -56,18 +56,7 @@ tInode CreerInode(int numInode, natureFichier type) {
 	time(&(iNode->dateDerModif));
 	time(&(iNode->dateDerModifInode));
 
-	// Création des NB_BLOCS_DIRECTS lors de la création de l'inode
-	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
-		tBloc bloc = CreerBloc();
-		if (bloc == NULL) {
-			// problème sur un bloc = problème sur l'inode -> arrêt de la fonction
-			fprintf(stderr, "CreerInode : probleme creaation");
-			perror("Erreur lors de la creation des blocs de donnees");
-
-			return NULL;
-		}
-		iNode->blocDonnees[k] = bloc;
-	}
+	// On n'initialise pas les blocs car on va les allouer à la volée
 
 	return iNode;
 }
@@ -79,8 +68,9 @@ tInode CreerInode(int numInode, natureFichier type) {
 */
 void DetruireInode(tInode *pInode) {
 	// D'abord détruire les NB_BLOCS_DIRECTS
-	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
-		DetruireBloc(&(*pInode)->blocDonnees[k]);
+	while ((*pInode)-> taille > 0) {
+		DetruireBloc(&((*pInode)->blocDonnees[(*pInode)->taille / TAILLE_BLOC]));
+		(*pInode)-> taille -= TAILLE_BLOC;
 	}
 	// Libération et pointage sur NULL
 	free(*pInode);
@@ -174,20 +164,11 @@ void AfficherInode(tInode inode) {
 
 	natureFichier type = Type(inode);
 	char * typeText = type == ORDINAIRE ? "Ordinaire" : type == REPERTOIRE ? "Repertoire" : type == AUTRE ? "Autre" : "never";
-	tBloc lecture = CreerBloc();
-	LireDonneesInode1bloc(inode, lecture, TAILLE_BLOC);
+	unsigned char chaine[TAILLE_BLOC + 1] = {0};
+	long lus = LireDonneesInode1bloc(inode, chaine, TAILLE_BLOC);
+	chaine[lus] = '\0';
 
-	char gabarit[TAILLE_TAILLE_BLOC + 4];
-	sprintf(gabarit, "%%.%ds", TAILLE_BLOC);
-	
-	char contenu[TAILLE_BLOC + 1];
-	sprintf(contenu, gabarit, lecture);
-
-	// Joli affichage sous forme d'objet javascript (sans couleur mais ça pourrait)
-	// L'utilisation du gabarit sert à afficher les x (64) premiers caractères de la chaine car il pourrait être non-nul terminé, depuis le chargement du fichier.
-	// J'ai choisit de ne pas remplacer le dernier caractère par \0 dans Ecrire1BlocFichierSF car j'ai choisit d'avoir le fichier continu de manière discontinue (si il est sur plusieurs blocs, il ne doit pas être interrompu par des \0), donc on s'adapte dans l'affichage et dans l'utilisation
-	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s\n    contenu: %s\n}\n", Numero(inode), type, typeText, Taille(inode), ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode), contenu);
-	DetruireBloc(&lecture);
+	printf("----------Inode [%d]----\n    Type : %s\n    Taille : %ld octets\n    Date de dernier access : %s    Date de derniere modification inode : %s    Date de derniere modificataion fichier : %s    Contenu :\n%s\n    Octets lus : %ld\n--------------------\n", inode->numero, typeText, inode->taille, ctime(&derAccess), ctime(&derModifInode), ctime(&derModifFichier), chaine, lus);
 }
 
 /* V1
@@ -197,6 +178,9 @@ void AfficherInode(tInode inode) {
 * Retour : le nombre d'octets effectivement écrits dans l'inode ou -1 en cas d'erreur
 */
 long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
+	if (inode->taille == 0) {
+		return 0;
+	}
 	// On utilise simplement la fonction de lecture d'un bloc sur le premier bloc
 	long octets_lus = LireContenuBloc(inode->blocDonnees[0], contenu, taille);
 	ActualiserDateDerAccess(inode); // Modification de la date d'accès au fichier, pusiqu'il a été lu
@@ -211,12 +195,22 @@ long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
 * Retour : le nombre d'octets effectivement lus dans l'inode ou -1 en cas d'erreur
 */
 long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
+	if (inode->taille == 0) {
+		// Les blocs n'ont tout simplement pas été initialisés
+		inode->blocDonnees[0] = CreerBloc();
+	}
 	// On utlise simplement la fonction d'écriture sur le premier bloc
 	long octets_ecrits = EcrireContenuBloc(inode->blocDonnees[0], contenu, taille);
 	ActualiserDateDerModif(inode); // Modification de la date de modification du fichier car il a été écrit
 
 	inode->taille = octets_ecrits; // La taille a également changé
 	ActualiserDateDerModifInode(inode); // Donc on modifie la date de modification de l'inode
+
+	// On a peut-être une nouvelle taille de 0, auquel cas on va détruire le bloc
+	if (inode->taille == 0) {
+		DetruireBloc(&(inode->blocDonnees[0]));
+	}
+
 	return octets_ecrits;
 	
 }

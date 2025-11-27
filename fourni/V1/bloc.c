@@ -16,7 +16,7 @@
 */
 tBloc CreerBloc (void) {
 	// Allocation de TAILLE_BLOC octets
-	tBloc ref = malloc(TAILLE_BLOC);
+	tBloc ref = malloc(TAILLE_BLOC * sizeof(unsigned char));
 	if (ref == NULL) {
 		// Erreur dans stderr
 		fprintf(stderr, "CreerBloc : probleme creation");

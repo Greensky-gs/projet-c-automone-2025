@@ -18,7 +18,7 @@ int main() {
     AfficherInode(iNode);
 
     // Test d'écriture
-    EcrireDonneesInode1bloc(iNode, (tBloc)"Je suis un génie", 17);
+    EcrireDonneesInode1bloc(iNode, (tBloc)"Je suis un genie", 17);
 
     AfficherInode(iNode);
 

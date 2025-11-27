@@ -50,18 +50,7 @@ tInode CreerInode(int numInode, natureFichier type) {
 	time(&(iNode->dateDerModif));
 	time(&(iNode->dateDerModifInode));
 
-	// Création des NB_BLOCS_DIRECTS lors de la création de l'inode
-	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
-		tBloc bloc = CreerBloc();
-		if (bloc == NULL) {
-			// problème sur un bloc = problème sur l'inode -> arrêt de la fonction
-			fprintf(stderr, "CreerInode : probleme creaation");
-			perror("Erreur lors de la creation des blocs de donnees");
-
-			return NULL;
-		}
-		iNode->blocDonnees[k] = bloc;
-	}
+	// On n'initialise pas les blocs car on va les allouer à la volée
 
 	return iNode;
 }
@@ -73,14 +62,14 @@ tInode CreerInode(int numInode, natureFichier type) {
 */
 void DetruireInode(tInode *pInode) {
 	// D'abord détruire les NB_BLOCS_DIRECTS
-	for (int k = 0; k < NB_BLOCS_DIRECTS; k++) {
-		DetruireBloc(&(*pInode)->blocDonnees[k]);
+	while ((*pInode)-> taille > 0) {
+		DetruireBloc(&((*pInode)->blocDonnees[(*pInode)->taille / TAILLE_BLOC]));
+		(*pInode)-> taille -= TAILLE_BLOC;
 	}
 	// Libération et pointage sur NULL
 	free(*pInode);
 	*pInode = NULL;
 }
-
 // 3 fonctions statiques de modification des dates
 static void ActualiserDateDerAccess(tInode inode) {
 	time(&(inode->dateDerAcces));
