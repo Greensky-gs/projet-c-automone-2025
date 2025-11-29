@@ -13,12 +13,17 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+// Variables personnelles
+#define TAILLE_MAXIMALE_NUM_INODES 5
+// Cette constante sert à donner la taille de maximale des numéros d'inode en nombre de chiffres
+
+
 // Définition d'un répertoire
 struct sRepertoire {
 	tEntreesRepertoire * table;
 };
 
-unsigned long tailleEntreesTab() {
+static unsigned long tailleEntreesTab() {
     return ((TAILLE_BLOC * 10) / (TAILLE_NOM_FICHIER + sizeof(unsigned int)));
 }
 
@@ -152,6 +157,14 @@ int EcrireEntreeRepertoire(tRepertoire rep, char nomEntree[], unsigned int numer
 	return 0;
 }
 
+static int tailleStr(char * str) {
+	int c = 0;
+	while (str[c] != '\0') {
+		c++;
+	}
+	return c;
+}
+
 /* V4
 * Lit le contenu d'un répertoire depuis un inode.
 * Entrées : le répertoire mis à jour avec le contenu lu,
@@ -159,7 +172,7 @@ int EcrireEntreeRepertoire(tRepertoire rep, char nomEntree[], unsigned int numer
 * Retour : 0 si le répertoire est lu avec succès, -1 en cas d'erreur
 */
 int LireRepertoireDepuisInode(tRepertoire *pRep, tInode inode) {
-	// A COMPLETER
+	
 }
 
 /* V4
@@ -167,9 +180,28 @@ int LireRepertoireDepuisInode(tRepertoire *pRep, tInode inode) {
 * Entrées : le répertoire source et l'inode destination
 * Sortie : 0 si le répertoire est écrit avec succès, -1 en cas d'erreur
 */
-int EcrireRepertoireDansInode(tRepertoire rep, tInode inode)
-{
-	// A COMPLETER
+int EcrireRepertoireDansInode(tRepertoire rep, tInode inode) {
+	// On va écrire les informations sous cette forme : numInode.nomFichier\0, on ne peut pas mettre les deux tout à fait à côté alors on les sépare avec un caractère (qui peut être n'importe lequel sauf un chiffre [0-9])
+
+	// Essayons d'être précis
+	unsigned char * buffer = malloc(TAILLE_NOM_FICHIER + 1 + TAILLE_MAXIMALE_NUM_INODES + 1); // Les deux 1 sont pour le point et le \0
+	
+	long ecrits = 0;
+	int indice = 0;
+	while (rep->table[indice]->nomEntree[0] != '\0' && indice < tailleEntreesTab()) {
+		sprintf(buffer, "%d.%s\0", rep->table[indice]->numeroInode, rep->table[indice]->nomEntree);
+		int taille = tailleStr(buffer) + 1;
+
+		int res = EcrireDonneesInode(inode, buffer, taille, ecrits);
+		if (res == -1) {
+			perror("EcrireRepertoireDansInode : Erreur ecriture");
+			return -1;
+		}
+		ecrits+=res;
+		indice++;
+	}
+
+	return 0;
 }
 
 /* V4

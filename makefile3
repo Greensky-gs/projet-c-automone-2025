@@ -25,7 +25,7 @@ endif
 
 $(output): $(output).o $(deps)
 	$(ECHO_MSG)
-	$(CC) $(FLAGS) $(SANITIZERS) -fsanitize=address,undefined -g $(output).o $(deps) -o $(output).exe
+	$(CC) $(FLAGS) $(SANITIZERS) $(output).o $(deps) -o $(output).exe
 
 $(output).o: $(output).c $(HREF)
 	$(CC) $(FLAGS) $(SANITIZERS) -c $(output).c
