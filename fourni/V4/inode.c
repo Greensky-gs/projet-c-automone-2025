@@ -171,6 +171,10 @@ void AfficherInode(tInode inode) {
 	long lus = LireDonneesInode(inode, chaine, inode->taille, 0);
 	chaine[lus] = '\0';
 
+	if (inode->taille == 0) {
+		sprintf((char *)chaine, "Vide");
+	}
+
 	printf("----------Inode [%d]----\n    Type : %s\n    Taille : %ld octets\n    Date de dernier access : %s    Date de derniere modification inode : %s    Date de derniere modification fichier : %s    Contenu :\n%s\n    Octets lus : %ld\n--------------------\n", inode->numero, typeText, inode->taille, ctime(&derAccess), ctime(&derModifInode), ctime(&derModifFichier), inode->taille == 0 ? "Vide" : chaine, lus);
 
 	free(chaine);
