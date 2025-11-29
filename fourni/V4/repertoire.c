@@ -198,7 +198,7 @@ int LireRepertoireDepuisInode(tRepertoire *pRep, tInode inode) {
 	while (indice < lus) {
 		int avant = indice;
 		unsigned int lecture;
-		if (sscanf((unsigned char *)(buffer + indice), "%ld.", &lecture) < 1) {
+		if (sscanf((unsigned char *)(buffer + indice), "%u.", &lecture) < 1) {
 			perror("LireRepertoireDepuisInode : Erreur lecture numero inode");
 			free(buffer);
 			return -1;
