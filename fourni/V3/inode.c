@@ -168,11 +168,13 @@ void AfficherInode(tInode inode) {
 		perror("AfficherInode : erreur allocation");
 		return;
 	}
-	
-	long lus = LireDonneesInode1bloc(inode, chaine, TAILLE_BLOC);
+
+	long lus = LireDonneesInode(inode, chaine, inode->taille, 0);
 	chaine[lus] = '\0';
 
 	printf("----------Inode [%d]----\n    Type : %s\n    Taille : %ld octets\n    Date de dernier access : %s    Date de derniere modification inode : %s    Date de derniere modificataion fichier : %s    Contenu :\n%s\n    Octets lus : %ld\n--------------------\n", inode->numero, typeText, inode->taille, ctime(&derAccess), ctime(&derModifInode), ctime(&derModifFichier), chaine, lus);
+
+	free(chaine);
 }
 
 /* V1
