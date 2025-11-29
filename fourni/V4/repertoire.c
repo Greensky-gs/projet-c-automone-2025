@@ -167,7 +167,7 @@ static int tailleStr(unsigned char * str) {
 static int log10int(int n) {
 	if (n <= 0) return -1;
 	// n > 0
-	int c = 0;
+	int c = 1;
 	while (n >= 10) {
 		n = n / 10;
 		c++;
@@ -185,7 +185,7 @@ int LireRepertoireDepuisInode(tRepertoire *pRep, tInode inode) {
 	// Même étapes que EcrireRepertoireDansInode mais en sens inverse
 	if (Taille(inode) == 0) return 0; // Le répertoire est techniquement vide, donc pas d'erreur
 
-	unsigned char * buffer = calloc(1, Taille(inode) + 1);
+	unsigned char * buffer = calloc(1, Taille(inode) + 3);
 	if (buffer == NULL) {
 		perror("LireRepertoireDepuisInode : Erreur allocation");
 		return -1;
@@ -193,23 +193,32 @@ int LireRepertoireDepuisInode(tRepertoire *pRep, tInode inode) {
 
 	long lus = LireDonneesInode(inode, buffer, Taille(inode), 0);
 	int indice = 0;
+	int tableIndex = 0;
 
 	while (indice < lus) {
 		int avant = indice;
-		scanf((char *)(buffer + indice), "%d.", &((*pRep)->table[indice]->numeroInode));
-		indice += log10int((*pRep)->table[indice]->numeroInode) + 1; // Le +1 est pour passer le point
+		unsigned int lecture;
+		if (sscanf((unsigned char *)(buffer + indice), "%ld.", &lecture) < 1) {
+			perror("LireRepertoireDepuisInode : Erreur lecture numero inode");
+			free(buffer);
+			return -1;
+		}
+
+		(*pRep)->table[tableIndex]->numeroInode = lecture;
+		
+		indice += log10int((*pRep)->table[tableIndex]->numeroInode) + 1; // Le +1 est pour passer le point
 		int i = 0;
 
 		while (buffer[indice] != '\n' && indice < lus) {
-			(*pRep)->table[indice]->nomEntree[i] = buffer[indice];
+			(*pRep)->table[tableIndex]->nomEntree[i] = buffer[indice];
 			i++;
 			indice++;
 		}
 
-		(*pRep)->table[indice]->nomEntree[i] = '\0';
+		(*pRep)->table[tableIndex]->nomEntree[i] = '\0';
 		indice++; // Pour passer le \n
 
-		printf("Indice initial : %d      Indice final : %d      Nom entree : %s      Num inode : %d\n", avant, indice, (*pRep)->table[indice]->nomEntree, (*pRep)->table[indice]->numeroInode);
+		tableIndex++;
 	}
 
 	free(buffer);
