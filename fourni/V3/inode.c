@@ -68,7 +68,7 @@ void DetruireInode(tInode *pInode) {
 	int indice = 0;
 	while (indice * TAILLE_BLOC < (*pInode)-> taille) {
 		DetruireBloc(&((*pInode)->blocDonnees[indice]));
-		(*pInode)-> taille -= TAILLE_BLOC;
+		indice++;
 	}
 	// Libération et pointage sur NULL
 	free(*pInode);
