@@ -161,7 +161,14 @@ void AfficherInode(tInode inode) {
 
 	natureFichier type = Type(inode);
 	char * typeText = type == ORDINAIRE ? "Ordinaire" : type == REPERTOIRE ? "Repertoire" : type == AUTRE ? "Autre" : "never";
-	unsigned char chaine[TAILLE_BLOC + 1] = {0};
+
+	// Puisqu'on va allouer une chaine de la taille inode->taille + 1, on utilise un calloc plutôt qu'une VLA  (c'est bien hein)
+	unsigned char * chaine = calloc(inode->taille + 1, sizeof(unsigned char));
+	if (chaine == NULL) {
+		perror("AfficherInode : erreur allocation");
+		return;
+	}
+	
 	long lus = LireDonneesInode1bloc(inode, chaine, TAILLE_BLOC);
 	chaine[lus] = '\0';
 
