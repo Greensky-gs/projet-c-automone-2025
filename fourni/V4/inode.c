@@ -157,32 +157,23 @@ void AfficherInode(tInode inode) {
 	time_t derAccess = DateDerAcces(inode);
 	time_t derModifFichier = DateDerModifFichier(inode);
 	time_t derModifInode = DateDerModif(inode);
-	long taille = Taille(inode);
 
 	natureFichier type = Type(inode);
 	char * typeText = type == ORDINAIRE ? "Ordinaire" : type == REPERTOIRE ? "Repertoire" : type == AUTRE ? "Autre" : "never";
 
-	unsigned char * contenuTotal = malloc(NB_BLOCS_DIRECTS * TAILLE_BLOC + 1);
-	contenuTotal[NB_BLOCS_DIRECTS * TAILLE_BLOC] = '\0';
-
-	int i = 0;
-	while (i < NB_BLOCS_DIRECTS && i * TAILLE_BLOC < taille) {
-		LireContenuBloc(inode->blocDonnees[i], &contenuTotal[i * TAILLE_BLOC], TAILLE_BLOC);
-		i++;
-	}
-	contenuTotal[i * TAILLE_BLOC] = '\0';
-
-	// Joli affichage sous forme d'objet javascript (sans couleur mais ça pourrait)
-	// Je rapelle que j'ai choisit de ne pas remplacer le dernier caractère par \0 dans Ecrire1BlocFichierSF car j'ai choisit d'avoir le fichier continu de manière discontinue (si il est sur plusieurs blocs, il ne doit pas être interrompu par des \0), donc on s'adapte dans l'affichage et dans l'utilisation (ici contenuTotal est forcément nul-terminé grâce à la ligne du dessus, donc on peut l'afficher sans déclencher de stack-buffer-overflow)
-	printf("{\n    numero: %d\n    type: %d (%s)\n    taille: %ld\n    dernier access: %s\n    derniere modif. fichier: %s\n    derniere modif. inode: %s", Numero(inode), type, typeText, taille, ctime(&derAccess), ctime(&derModifFichier), ctime(&derModifInode));
-
-	if (inode->taille == 0) {
-		printf("\n    L'inode est vide\n}\n");
-	} else {
-		printf("\n    contenu:\n%s\n}\n", contenuTotal);
+	// Puisqu'on va allouer une chaine de la taille inode->taille + 1, on utilise un calloc plutôt qu'une VLA  (c'est bien hein)
+	unsigned char * chaine = calloc(inode->taille + 1, sizeof(unsigned char));
+	if (chaine == NULL) {
+		perror("AfficherInode : erreur allocation");
+		return;
 	}
 
-	free(contenuTotal);
+	long lus = LireDonneesInode(inode, chaine, inode->taille, 0);
+	chaine[lus] = '\0';
+
+	printf("----------Inode [%d]----\n    Type : %s\n    Taille : %ld octets\n    Date de dernier access : %s    Date de derniere modification inode : %s    Date de derniere modification fichier : %s    Contenu :\n%s\n    Octets lus : %ld\n--------------------\n", inode->numero, typeText, inode->taille, ctime(&derAccess), ctime(&derModifInode), ctime(&derModifFichier), inode->taille == 0 ? "Vide" : chaine, lus);
+
+	free(chaine);
 }
 
 /* V1
