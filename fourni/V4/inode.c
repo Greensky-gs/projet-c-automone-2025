@@ -316,10 +316,13 @@ int SauvegarderInode(tInode inode, FILE * fichier) {
 	// C'est toutes les données qu'on peut représenter ligne par ligne sans avoir à se soucier du fait qu'on pourrait avoir un retour à la ligne à cause du contenu
 
 	// Enregistrement des blocs
+	long total = inode->taille;
 	int i = 0;
-	while (i < NB_BLOCS_DIRECTS) {
+	while (i < NB_BLOCS_DIRECTS && i * TAILLE_BLOC < total) {
 		tBloc bloc = inode->blocDonnees[i];
-		int res = SauvegarderBloc(bloc, TAILLE_BLOC, fichier);
+		long octets = total - (i * TAILLE_BLOC);
+		if (octets > TAILLE_BLOC) octets = TAILLE_BLOC;
+		int res = SauvegarderBloc(bloc, octets, fichier);
 		if (res == -1) {
 			perror("SauvegarderInode : Erreur enregistrement blocs");
 			return -1;
@@ -348,6 +351,13 @@ int ChargerInode(tInode *pInode, FILE *fichier) {
 	int i = 0;
 	while (i < NB_BLOCS_DIRECTS && i * TAILLE_BLOC < (*pInode)->taille) {
 		// On charge chaque bloc
+		if ((*pInode)->blocDonnees[i] == NULL) {
+			(*pInode)->blocDonnees[i] = CreerBloc();
+			if ((*pInode)->blocDonnees[i] == NULL) {
+				perror("ChargerInode : Erreur allocation bloc");
+				return -1;
+			}
+		}
 		int res = ChargerBloc((*pInode)->blocDonnees[i], (*pInode)->taille - (i * TAILLE_BLOC), fichier);
 		if (res == -1) {
 			perror("ChargerInode : Erreur chargement blocs");
