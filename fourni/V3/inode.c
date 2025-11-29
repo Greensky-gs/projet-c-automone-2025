@@ -317,8 +317,7 @@ int SauvegarderInode(tInode inode, FILE * fichier) {
 
 	// Enregistrement des blocs
 	long taille = inode->taille;
-	while (taille > TAILLE_BLOC) {
-		printf("taille = %ld   taille/TAILLE_BLOC = %ld\n", taille, taille / TAILLE_BLOC);
+	while (taille > 0) {
 		tBloc bloc = inode->blocDonnees[taille / TAILLE_BLOC];
 		int res = SauvegarderBloc(bloc, TAILLE_BLOC, fichier);
 		if (res == -1) {
