@@ -316,15 +316,18 @@ int SauvegarderInode(tInode inode, FILE * fichier) {
 	// C'est toutes les données qu'on peut représenter ligne par ligne sans avoir à se soucier du fait qu'on pourrait avoir un retour à la ligne à cause du contenu
 
 	// Enregistrement des blocs
-	long taille = inode->taille;
-	while (taille > 0) {
-		tBloc bloc = inode->blocDonnees[taille / TAILLE_BLOC];
-		int res = SauvegarderBloc(bloc, TAILLE_BLOC, fichier);
+	long total = inode->taille;
+	int i = 0;
+	while (i < NB_BLOCS_DIRECTS && i * TAILLE_BLOC < total) {
+		tBloc bloc = inode->blocDonnees[i];
+		long octets = total - (i * TAILLE_BLOC);
+		if (octets > TAILLE_BLOC) octets = TAILLE_BLOC;
+		int res = SauvegarderBloc(bloc, octets, fichier);
 		if (res == -1) {
 			perror("SauvegarderInode : Erreur enregistrement blocs");
 			return -1;
 		}
-		taille -= TAILLE_BLOC;
+		i++;
 	}
 
 	return 0;
