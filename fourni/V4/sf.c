@@ -9,6 +9,7 @@
 #include "sf.h"
 #include "bloc.h"
 #include "inode.h"
+#include "repertoire.h"
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -117,12 +118,33 @@ tSF CreerSF (char nomDisque[]){
 		free(syst);
 		return NULL;
 	}
+
+	tRepertoire rep = CreerRepertoire();
+	if (rep == NULL) {
+		perror("CreerSF : Erreur creation repertoire initial");;
+		DetruireSuperBloc(&superBloc);
+		free(syst);
+		return NULL;
+	}
+	tInode inodeRep = CreerInode(0, REPERTOIRE); // Répertoire racine
+	if (inodeRep == NULL) {
+		perror("CreerSF : Erreur creation inode racine");
+		DetruireRepertoire(&inodeRep);
+		DetruireSuperBloc(&superBloc);
+		free(syst);
+		return NULL;
+	}
+	EcrireRepertoireDansInode(rep, inodeRep);
+	// On détruit ensuite le répertoire, car on en pas besoin 
+	DetruireRepertoire(&rep);
 	
 	// Initialisation avec des valeurs par défaut
-	syst->superBloc=superBloc;
-	syst->listeInodes.nbInodes = 0;
-	syst->listeInodes.dernier = NULL;
-	syst->listeInodes.premier = NULL;
+	syst->superBloc = superBloc;
+	syst->listeInodes.nbInodes = 1;
+	syst->listeInodes.dernier->inode = inodeRep;
+	syst->listeInodes.premier->inode = inodeRep;
+	syst->listeInodes.dernier->suivant = NULL;
+	syst->listeInodes.premier->suivant = NULL;
 	
 	return syst;
 }
@@ -260,7 +282,7 @@ long Ecrire1BlocFichierSF(tSF sf, char nomFichier[], natureFichier type) {
 * Sortie : le nombre d'octets effectivement écrits, -1 en cas d'erreur.
 */
 long EcrireFichierSF(tSF sf, char nomFichier[], natureFichier type) {
-	tInode inode = CreerInode(sf->listeInodes.nbInodes, type);
+	tInode inode = CreerInode(sf->listeInodes.nbInodes + 1, type);
 	
 	if (inode == NULL) {
 		perror("EcrireFichierSF : Erreur creation inode");
@@ -307,6 +329,20 @@ long EcrireFichierSF(tSF sf, char nomFichier[], natureFichier type) {
 		free(contenu);
 		return -1;
 	}
+	tRepertoire rep = CreerRepertoire(); // On doit le recréer car on ne peut pas le transmettre via un tSF
+	if (rep == NULL) {
+		perror("EcritureFichierSF : Erreur creation repertoire");
+		DetruireInode(&inode);
+		fclose(flux);
+		free(contenu);
+		free(element);
+		return -1;
+	}
+	LireRepertoireDepuisInode(&rep, sf->listeInodes.premier->inode);
+	EcrireEntreeRepertoire(rep, nomFichier, Numero(inode));
+	EcrireRepertoireDansInode(rep, sf->listeInodes.premier->inode);
+	DetruireRepertoire(&rep);
+
 	element->inode = inode;
 	element->suivant = NULL;
 	
@@ -502,5 +538,46 @@ int ChargerSF(tSF *pSF, char nomFichier[]) {
 * Sortie : 0 en cas de succès, -1 en cas d'erreur
 */
 int Ls(tSF sf, bool detail)  {
-	// A COMPLETER
+	tRepertoire rep = CreerRepertoire();
+	if (rep == NULL) {
+		perror("Ls : Erreur creation repertoire");
+		return -1;
+	}
+	LireRepertoireDepuisInode(&rep, sf->listeInodes.premier->inode);
+	int entrees = NbEntreesRepertoire(rep);
+	struct sEntreesRepertoire * tabNumInodes = malloc(entrees * sizeof(struct sEntreesRepertoire));
+	entrees = EntreesContenuesDansRepertoire(rep, tabNumInodes);
+
+	int i = 0;
+	printf("Nombre de fichiers dans le repertoire racine : %d\n", entrees);
+	while (i < entrees) {
+		if (tabNumInodes[i].numeroInode == 0) {
+			i++;
+			continue;
+		}
+
+		if (detail) {
+			tInode inode = NULL;
+			struct sListeInodesElement * element = sf->listeInodes.premier;
+			while (element != NULL) {
+				if (Numero(element->inode) == tabNumInodes[i].numeroInode) {
+					inode = element->inode;
+					break;
+				}
+				element = element->suivant;
+			}
+			if (inode == NULL) {
+				perror("Ls : Erreur recuperation inode");
+				free(tabNumInodes);
+				DetruireRepertoire(&rep);
+				return -1;
+			}
+
+			time_t derModif = DateDerModifFichier(inode);
+
+			printf("%-3u %-12s %6ld %s %s\n", tabNumInodes[i].numeroInode, Type(inode) == REPERTOIRE ? "repertoire" : Type(inode) == ORDINAIRE ? "fichier" : "autre", Taille(inode), ctime(&derModif), tabNumInodes[i].nomEntree);
+		} else {
+			printf("%s\n", tabNumInodes[i].nomEntree);
+		}
+	}
 }

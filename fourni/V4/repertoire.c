@@ -261,9 +261,14 @@ int EcrireRepertoireDansInode(tRepertoire rep, tInode inode) {
 * Entrées : le répertoire source, un tableau récupérant les numéros d'inodes des entrées du rpertoire
 * Retour : le nombre d'entrées dans le répertoire
 */
-int EntreesContenuesDansRepertoire(tRepertoire rep, struct sEntreesRepertoire tabNumInodes[])
-{
-	// A COMPLETER
+int EntreesContenuesDansRepertoire(tRepertoire rep, struct sEntreesRepertoire tabNumInodes[]) {
+	int indice = 0;
+	while (indice < tailleEntreesTab() && rep->table[indice]->nomEntree[0] != '\0') {
+		tabNumInodes[indice].numeroInode = rep->table[indice]->numeroInode;
+		copyStr(tabNumInodes[indice].nomEntree, rep->table[indice]->nomEntree);
+		indice++;
+	}
+	return indice;
 }
 
 /* V4

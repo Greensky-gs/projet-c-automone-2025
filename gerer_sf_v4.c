@@ -1,7 +1,8 @@
+#include "fourni/V4/sf.h"
+#include "fourni/V4/inode.h"
+#include "fourni/V4/bloc.h"
 #include "fourni/V4/repertoire.h"
 #include <stdio.h>
-
-#define ADD(x, y) x + y
 
 int main() {
 // int testAffichage() {
@@ -61,5 +62,21 @@ int main() {
     DetruireRepertoire(&rep2);
 
     fclose(load);
+    printf("\x1b[32m--- Fin des tests de lecture ---\x1b[0m\n");
+    printf("\x1b[32m--- Ouverture tests affichage & système fichiers ---\x1b[0m\n");
+
+    tSF sf = CreerSF("SSD");
+    
+    EcrireFichierSF(sf, "LICENCE", ORDINAIRE);
+    EcrireFichierSF(sf, "README.md", ORDINAIRE);
+    EcrireFichierSF(sf, ".gitignore", ORDINAIRE);
+
+    AfficherSF(sf);
+
+    Ls(sf, true);
+    Ls(sf, false);
+
+    DetruireSF(&sf);
+    printf("\x1b[32m--- Fin des tests affichage & système fichiers ---\x1b[0m\n");
     return 0;
 }
