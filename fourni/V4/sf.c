@@ -169,22 +169,20 @@ tSF CreerSF (char nomDisque[]){
 
 // Puisque ce code doit être utilisé dans deux fonctions différentes, on le factorise
 static void libererListeInodesSF(tSF * pSF) {
-	struct sListeInodesElement ** suivant = &(*pSF)->listeInodes.premier; // Double pointeur pour libérer à la fois le contenu et le contenant
-	struct sListeInodesElement * temp = NULL; // Variable temporaire utilisée dans la suite
-	
-	while (*suivant != NULL) { // Libération itérative
-		struct sListeInodesElement * supprimer = *suivant; // On stocke le pointeur (contenant) à libérer par la suite
-		DetruireInode(&((*suivant)->inode)); // On détruit l'inode correspondant
-		temp = (*suivant)->suivant; // On stocke la suite avant de la libérer
-		free(supprimer); // On libère le contenant
-		
-		// Passage au suivant
-		if (temp == NULL) {
-			*suivant = NULL;
-		} else {
-			suivant = &temp;
-		}
+	/*
+	 * Iterate the list and free each element safely.
+	 * The previous implementation took the address of a local variable
+	 * (temp) which produced an invalid pointer in the next iteration.
+	 */
+	struct sListeInodesElement * courant = (*pSF)->listeInodes.premier;
+	while (courant != NULL) {
+		struct sListeInodesElement * suivant = courant->suivant;
+		DetruireInode(&(courant->inode));
+		free(courant);
+		courant = suivant;
 	}
+	(*pSF)->listeInodes.premier = NULL;
+	(*pSF)->listeInodes.dernier = NULL;
 }
 /* V2
 * Détruit un système de fichiers et libère la mémoire associée.
@@ -546,12 +544,13 @@ int ChargerSF(tSF *pSF, char nomFichier[]) {
 }
 
 static void displayTime(time_t time, char * str) {
-	str = ctime(&time);
 	int i = 0;
-	while (str[i] != '\n') {
+	while (str[i] != '\0') {
+		if (str[i] == '\n') {
+			str[i] = '\0';
+		}
 		i++;
 	}
-	str[i] = '\0';
 }
 
 /* V4
@@ -599,10 +598,10 @@ int Ls(tSF sf, bool detail)  {
 
 			time_t derModif = DateDerModifFichier(inode);
 
-			char * date[31] = {0};
+			char * date = ctime(&derModif);
 			displayTime(derModif, date);
 
-			printf("%-3u %-12s %6ld %s %s\n", tabNumInodes[i].numeroInode, Type(inode) == REPERTOIRE ? "repertoire" : Type(inode) == ORDINAIRE ? "fichier" : "autre", Taille(inode), date, tabNumInodes[i].nomEntree);
+			printf("%-3u %-12s %6ld %s %s\n", tabNumInodes[i].numeroInode, Type(inode) == REPERTOIRE ? "REPERTORIE" : Type(inode) == ORDINAIRE ? "FICHIER" : "AUTRE", Taille(inode), date, tabNumInodes[i].nomEntree);
 		} else {
 			printf("%s\n", tabNumInodes[i].nomEntree);
 		}

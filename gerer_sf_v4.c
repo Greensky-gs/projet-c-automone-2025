@@ -67,7 +67,7 @@ int main() {
 
     tSF sf = CreerSF("SSD");
     
-    EcrireFichierSF(sf, "LICENCE", ORDINAIRE);
+    EcrireFichierSF(sf, "LICENSE", ORDINAIRE);
     EcrireFichierSF(sf, "README.md", ORDINAIRE);
     EcrireFichierSF(sf, ".gitignore", ORDINAIRE);
 
