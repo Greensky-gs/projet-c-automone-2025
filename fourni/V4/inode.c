@@ -188,6 +188,9 @@ void AfficherInode(tInode inode) {
 * Retour : le nombre d'octets effectivement écrits dans l'inode ou -1 en cas d'erreur
 */
 long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
+	if (inode->taille == 0) {
+		return 0;
+	}
 	// On utilise simplement la fonction de lecture d'un bloc sur le premier bloc
 	long octets_lus = LireContenuBloc(inode->blocDonnees[0], contenu, taille);
 	ActualiserDateDerAccess(inode); // Modification de la date d'accès au fichier, pusiqu'il a été lu
@@ -202,12 +205,25 @@ long LireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
 * Retour : le nombre d'octets effectivement lus dans l'inode ou -1 en cas d'erreur
 */
 long EcrireDonneesInode1bloc(tInode inode, unsigned char *contenu, long taille) {
+	if (inode->taille == 0) {
+		inode->blocDonnees[0] = CreerBloc();
+		if (inode->blocDonnees[0] == NULL) {
+			perror("EcrireDonneesInode1bloc : Erreur allocation bloc");
+			return -1;
+		}
+	}
 	// On utlise simplement la fonction d'écriture sur le premier bloc
 	long octets_ecrits = EcrireContenuBloc(inode->blocDonnees[0], contenu, taille);
 	ActualiserDateDerModif(inode); // Modification de la date de modification du fichier car il a été écrit
 
 	inode->taille = octets_ecrits; // La taille a également changé
 	ActualiserDateDerModifInode(inode); // Donc on modifie la date de modification de l'inode
+
+	// On a peut-être une nouvelle taille de 0, auquel cas on va détruire le bloc
+	if (inode->taille == 0) {
+		DetruireBloc(&(inode->blocDonnees[0]));
+	}
+
 	return octets_ecrits;
 	
 }
