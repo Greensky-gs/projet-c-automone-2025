@@ -1,3 +1,4 @@
+// Code par Greensky-gs (David Heslière)
 /**
 * ProgC - Projet Automne 25-26 : Gestion de systèmes de fichiers
 * VERSION 4
@@ -12,12 +13,17 @@
 #include <stdio.h>
 #include <stdbool.h>
 
+// Variables personnelles
+#define TAILLE_MAXIMALE_NUM_INODES 5
+// Cette constante sert à donner la taille de maximale des numéros d'inode en nombre de chiffres
+
+
 // Définition d'un répertoire
 struct sRepertoire {
 	tEntreesRepertoire * table;
 };
 
-unsigned long tailleEntreesTab() {
+static unsigned long tailleEntreesTab() {
     return ((TAILLE_BLOC * 10) / (TAILLE_NOM_FICHIER + sizeof(unsigned int)));
 }
 
@@ -151,6 +157,24 @@ int EcrireEntreeRepertoire(tRepertoire rep, char nomEntree[], unsigned int numer
 	return 0;
 }
 
+static int tailleStr(unsigned char * str) {
+	int c = 0;
+	while (str[c] != '\0') {
+		c++;
+	}
+	return c;
+}
+static int log10int(int n) {
+	if (n <= 0) return -1;
+	// n > 0
+	int c = 1;
+	while (n >= 10) {
+		n = n / 10;
+		c++;
+	}
+	return c;
+}
+
 /* V4
 * Lit le contenu d'un répertoire depuis un inode.
 * Entrées : le répertoire mis à jour avec le contenu lu,
@@ -158,7 +182,46 @@ int EcrireEntreeRepertoire(tRepertoire rep, char nomEntree[], unsigned int numer
 * Retour : 0 si le répertoire est lu avec succès, -1 en cas d'erreur
 */
 int LireRepertoireDepuisInode(tRepertoire *pRep, tInode inode) {
-	// A COMPLETER
+	// Même étapes que EcrireRepertoireDansInode mais en sens inverse
+	if (Taille(inode) == 0) return 0; // Le répertoire est techniquement vide, donc pas d'erreur
+
+	unsigned char * buffer = calloc(1, Taille(inode) + 3);
+	if (buffer == NULL) {
+		perror("LireRepertoireDepuisInode : Erreur allocation");
+		return -1;
+	}
+
+	long lus = LireDonneesInode(inode, buffer, Taille(inode), 0);
+	int indice = 0;
+	int tableIndex = 0;
+
+	while (indice < lus) {
+		unsigned int lecture;
+		if (sscanf((char *)(buffer + indice), "%u.", &lecture) < 1) {
+			perror("LireRepertoireDepuisInode : Erreur lecture numero inode");
+			free(buffer);
+			return -1;
+		}
+
+		(*pRep)->table[tableIndex]->numeroInode = lecture;
+		
+		indice += log10int((*pRep)->table[tableIndex]->numeroInode) + 1; // Le +1 est pour passer le point
+		int i = 0;
+
+		while (buffer[indice] != '\n' && indice < lus) {
+			(*pRep)->table[tableIndex]->nomEntree[i] = buffer[indice];
+			i++;
+			indice++;
+		}
+
+		(*pRep)->table[tableIndex]->nomEntree[i] = '\0';
+		indice++; // Pour passer le \n
+
+		tableIndex++;
+	}
+
+	free(buffer);
+	return 0;
 }
 
 /* V4
@@ -166,9 +229,30 @@ int LireRepertoireDepuisInode(tRepertoire *pRep, tInode inode) {
 * Entrées : le répertoire source et l'inode destination
 * Sortie : 0 si le répertoire est écrit avec succès, -1 en cas d'erreur
 */
-int EcrireRepertoireDansInode(tRepertoire rep, tInode inode)
-{
-	// A COMPLETER
+int EcrireRepertoireDansInode(tRepertoire rep, tInode inode) {
+	// On va écrire les informations sous cette forme : numInode.nomFichier\n, on ne peut pas mettre les deux tout à fait à côté alors on les sépare avec un caractère (qui peut être n'importe lequel sauf un chiffre [0-9]) On assume également que le nom du fichier ne contient pas de retour à la ligne (ce qui est une condition réaliste)
+
+	// Essayons d'être précis
+	unsigned char * buffer = malloc(TAILLE_NOM_FICHIER + 1 + TAILLE_MAXIMALE_NUM_INODES + 1); // Les deux 1 sont pour le point et le \n
+	
+	long ecrits = 0;
+	int indice = 0;
+	while (rep->table[indice]->nomEntree[0] != '\0' && indice < tailleEntreesTab()) {
+		sprintf((char *)buffer, "%d.%s\n", rep->table[indice]->numeroInode, rep->table[indice]->nomEntree);
+		int taille = tailleStr(buffer);
+
+		int res = EcrireDonneesInode(inode, buffer, taille, ecrits);
+		if (res == -1) {
+			perror("EcrireRepertoireDansInode : Erreur ecriture");
+			return -1;
+		}
+		ecrits+=res;
+		indice++;
+	}
+
+	free(buffer);
+
+	return 0;
 }
 
 /* V4
@@ -176,9 +260,14 @@ int EcrireRepertoireDansInode(tRepertoire rep, tInode inode)
 * Entrées : le répertoire source, un tableau récupérant les numéros d'inodes des entrées du rpertoire
 * Retour : le nombre d'entrées dans le répertoire
 */
-int EntreesContenuesDansRepertoire(tRepertoire rep, struct sEntreesRepertoire tabNumInodes[])
-{
-	// A COMPLETER
+int EntreesContenuesDansRepertoire(tRepertoire rep, struct sEntreesRepertoire tabNumInodes[]) {
+	int indice = 0;
+	while (indice < tailleEntreesTab() && rep->table[indice]->nomEntree[0] != '\0') {
+		tabNumInodes[indice].numeroInode = rep->table[indice]->numeroInode;
+		copyStr(tabNumInodes[indice].nomEntree, rep->table[indice]->nomEntree);
+		indice++;
+	}
+	return indice;
 }
 
 /* V4

@@ -5,7 +5,7 @@ deps=bloc.o inode.o sf.o
 RM=rm -f
 VERSION=V3
 HREF=fourni/V3/bloc.h fourni/V3/inode.h fourni/V3/sf.h
-SANITIZES=-fsanitize=address,undefined
+SANITIZES=-fsanitize=address,undefined -g
 
 # Variable des sanitizers passés dans la commande
 SANITIZERS=

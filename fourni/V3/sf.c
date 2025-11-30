@@ -1,3 +1,4 @@
+// Code par Greensky-gs (David Heslière)
 /**
 * ProgC - Projet Automne 25-26 : Gestion de systèmes de fichiers
 * VERSION 3
@@ -350,7 +351,7 @@ int SauvegarderSF(tSF sf, char nomFichier[]) {
 	}
 	// On va d'abord écrire les informations du superbloc, car elles peuvent tenir des lignes
 	char tampon[TAILLE_NOM_DISQUE + 10] = {0}; // On met un certain nombre mais en réalité moins devrait suffire
-	sprintf(tampon, "%d\n", sf->superBloc->dateDerModif);
+	sprintf(tampon, "%ld\n", sf->superBloc->dateDerModif);
 	int res = fputs(tampon, flux);
 	if (res == EOF) {
 		perror("SauvegarderSF : Erreur Ecriture superBloc (date)");

@@ -1,3 +1,4 @@
+// Code par Greensky-gs (David Heslière)
 /**
 * ProgC - Projet Automne 25-26 : Gestion de systèmes de fichiers
 * VERSION 1
@@ -55,8 +56,10 @@ tInode CreerInode(int numInode, natureFichier type) {
 	time(&(iNode->dateDerModif));
 	time(&(iNode->dateDerModifInode));
 
-	// On n'initialise pas les blocs car on va les allouer à la volée
-
+	// On initialise les blocs à NULL
+	for (int i = 0; i < NB_BLOCS_DIRECTS; i++) {
+		(iNode->blocDonnees)[i] = NULL;
+	}
 	return iNode;
 }
 
@@ -167,7 +170,11 @@ void AfficherInode(tInode inode) {
 	long lus = LireDonneesInode1bloc(inode, chaine, TAILLE_BLOC);
 	chaine[lus] = '\0';
 
-	printf("----------Inode [%d]----\n    Type : %s\n    Taille : %ld octets\n    Date de dernier access : %s    Date de derniere modification inode : %s    Date de derniere modificataion fichier : %s    Contenu :\n%s\n    Octets lus : %ld\n--------------------\n", inode->numero, typeText, inode->taille, ctime(&derAccess), ctime(&derModifInode), ctime(&derModifFichier), chaine, lus);
+	if (inode->taille == 0) {
+		sprintf((char *)chaine, "Vide");
+	}
+
+	printf("----------Inode [%d]----\n    Type : %s\n    Taille : %ld octets\n    Date de dernier access : %s    Date de derniere modification inode : %s    Date de derniere modification fichier : %s    Contenu :\n%s\n    Octets lus : %ld\n--------------------\n", inode->numero, typeText, inode->taille, ctime(&derAccess), ctime(&derModifInode), ctime(&derModifFichier), chaine, lus);
 }
 
 /* V1

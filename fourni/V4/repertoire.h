@@ -34,9 +34,6 @@ typedef struct sRepertoire *tRepertoire;
 */
 extern tRepertoire CreerRepertoire(void);
 
-// Fonction qui calcule la taille maximale d'entrées (640/(24 + 4))
-extern unsigned long tailleEntreesTab(void);
-
 /* V4
 * Détruit un répertoire et libère la mémoire associée.
 * Entrée : le répertoire à détruire
