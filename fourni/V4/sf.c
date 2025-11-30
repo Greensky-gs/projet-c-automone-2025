@@ -169,20 +169,22 @@ tSF CreerSF (char nomDisque[]){
 
 // Puisque ce code doit être utilisé dans deux fonctions différentes, on le factorise
 static void libererListeInodesSF(tSF * pSF) {
-	/*
-	 * Iterate the list and free each element safely.
-	 * The previous implementation took the address of a local variable
-	 * (temp) which produced an invalid pointer in the next iteration.
-	 */
-	struct sListeInodesElement * courant = (*pSF)->listeInodes.premier;
-	while (courant != NULL) {
-		struct sListeInodesElement * suivant = courant->suivant;
-		DetruireInode(&(courant->inode));
-		free(courant);
-		courant = suivant;
+	struct sListeInodesElement ** suivant = &(*pSF)->listeInodes.premier; // Double pointeur pour libérer à la fois le contenu et le contenant
+	struct sListeInodesElement * temp = NULL; // Variable temporaire utilisée dans la suite
+	
+	while (*suivant != NULL) { // Libération itérative
+		struct sListeInodesElement * supprimer = *suivant; // On stocke le pointeur (contenant) à libérer par la suite
+		DetruireInode(&((*suivant)->inode)); // On détruit l'inode correspondant
+		temp = (*suivant)->suivant; // On stocke la suite avant de la libérer
+		free(supprimer); // On libère le contenant
+		
+		// Passage au suivant
+		if (temp == NULL) {
+			*suivant = NULL;
+		} else {
+			suivant = &temp;
+		}
 	}
-	(*pSF)->listeInodes.premier = NULL;
-	(*pSF)->listeInodes.dernier = NULL;
 }
 /* V2
 * Détruit un système de fichiers et libère la mémoire associée.
@@ -609,5 +611,7 @@ int Ls(tSF sf, bool detail)  {
 		i++;
 	}
 
+	DetruireRepertoire(&rep);
+	free(tabNumInodes);
 	return 0;
 }
