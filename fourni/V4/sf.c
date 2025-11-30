@@ -545,6 +545,15 @@ int ChargerSF(tSF *pSF, char nomFichier[]) {
 	return 0;
 }
 
+static void displayTime(time_t time, char * str) {
+	str = ctime(&time);
+	int i = 0;
+	while (str[i] != '\n') {
+		i++;
+	}
+	str[i] = '\0';
+}
+
 /* V4
 * Affiche le détail du répertoire racine d'un système de fichiers.
 * Entrées : le système de fichiers,
@@ -590,10 +599,15 @@ int Ls(tSF sf, bool detail)  {
 
 			time_t derModif = DateDerModifFichier(inode);
 
-			printf("%-3u %-12s %6ld %s %s\n", tabNumInodes[i].numeroInode, Type(inode) == REPERTOIRE ? "repertoire" : Type(inode) == ORDINAIRE ? "fichier" : "autre", Taille(inode), ctime(&derModif), tabNumInodes[i].nomEntree);
+			char * date[31] = {0};
+			displayTime(derModif, date);
+
+			printf("%-3u %-12s %6ld %s %s\n", tabNumInodes[i].numeroInode, Type(inode) == REPERTOIRE ? "repertoire" : Type(inode) == ORDINAIRE ? "fichier" : "autre", Taille(inode), date, tabNumInodes[i].nomEntree);
 		} else {
 			printf("%s\n", tabNumInodes[i].nomEntree);
 		}
+
+		i++;
 	}
 
 	return 0;
