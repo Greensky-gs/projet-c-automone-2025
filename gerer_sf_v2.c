@@ -4,19 +4,13 @@
 #include "fourni/V2/sf.h"
 
 int main() {
-    tSF syst = CreerSF("ssd");
+    tSF systeme = CreerSF("SYSTEME");
 
-    AfficherSF(syst);
+    Ecrire1BlocFichierSF(systeme, "makefile2", ORDINAIRE);
+    
+    AfficherSF(systeme);
 
-    Ecrire1BlocFichierSF(syst, "test.txt", ORDINAIRE);
-
-    AfficherSF(syst);
-
-    Ecrire1BlocFichierSF(syst, "gerer_sf_v1.c", ORDINAIRE);
-
-    AfficherSF(syst);
-
-    DetruireSF(&syst);
+    DetruireSF(&systeme);
 
     return 0;
 }

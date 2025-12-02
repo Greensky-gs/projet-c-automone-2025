@@ -122,7 +122,7 @@ tSF CreerSF (char nomDisque[]){
 	}
 
 	// Initialisation avec des valeurs par défaut
-	syst->superBloc=superBloc;
+	syst->superBloc = superBloc;
 	syst->listeInodes.nbInodes = 0;
 	syst->listeInodes.dernier = NULL;
 	syst->listeInodes.premier = NULL;
@@ -194,57 +194,64 @@ void AfficherSF (tSF sf){
 	printf("---------------[ FIN SF ]---------------\n");
 }
 
+static struct sListeInodesElement * CreerListeInodeElement(tInode inode, struct sListeInodesElement * suivant) {
+	struct sListeInodesElement * element = malloc(sizeof(struct sListeInodesElement));
+	if (element == NULL) {
+		perror("CreerListeInodesElement : erreur allocation");
+		return NULL;
+	}
+
+	element -> inode = inode;
+	element -> suivant = suivant;
+
+	return element;
+}
+
 /* V2
 * Ecrit un fichier d'un seul bloc dans le système de fichiers.
 * Entrées : le système de fichiers, le nom du fichier (sur disque) et son type dans le SF (simulé)
 * Sortie : le nombre d'octets effectivement écrits, -1 en cas d'erreur.
 */
 long Ecrire1BlocFichierSF(tSF sf, char nomFichier[], natureFichier type) {
-	tInode inode = CreerInode(sf->listeInodes.nbInodes, type); // Création d'un inode
-	if (inode == NULL) {
-		perror("Ecrire1BlocFichierSF : Erreur creation");
-		return -1;
-	}
-	
-	FILE * fichier = fopen(nomFichier, "rb"); // Ouverture du fichier
+	FILE * fichier = fopen(nomFichier, "rb");
 	if (fichier == NULL) {
-		DetruireInode(&inode);
-		perror("Ecrire1BlocFichierSF : Erreur acces fichier");
+		perror("Ecrire1BlocFichierSF : Erreur ouverture");
 		return -1;
 	}
 
-	unsigned char contenu[TAILLE_BLOC + 1] = {0}; // Allocation d'un tableau vide qui contiendra le contenu du fichier
-	size_t resultatLecture = fread(contenu, 1, TAILLE_BLOC, fichier);
-	if (resultatLecture == 0 && ferror(fichier)) { // La lecture n'a rien donné ET une erreur a eu lieu
-		perror("Ecrire1BlocFichierSF : Erreur lecture fichier. Abandon.");
-		DetruireInode(&inode);
+	unsigned char chaine[TAILLE_BLOC] = {0};
+	long resultatLecture = fread(chaine, sizeof(unsigned char), TAILLE_BLOC, fichier);
+
+	if (resultatLecture == EOF) {
+		perror("Ecrire1BlocFichierSF : Erreur lecture");
 		fclose(fichier);
 		return -1;
 	}
 
-	long ecrits = EcrireDonneesInode1bloc(inode, contenu, resultatLecture); // Écriture dans contenu
-	sf->listeInodes.nbInodes++;
+	if (sf -> listeInodes.nbInodes > 0) {
+		EcrireDonneesInode1bloc(sf -> listeInodes.premier -> inode, chaine, resultatLecture);
+	} else {
+		tInode inode = CreerInode(1, type);
+		if (inode == NULL) {
+			perror("Ecrire1BlocFichierSF : erreur allocation inode");
+			fclose(fichier);
+			return -1;
+		}
 
-	struct sListeInodesElement * ptr = malloc(sizeof(struct sListeInodesElement)); // Allocation d'un nouvel élément de liste chainée (pourrait être factorisé en fonction statique, mais pour l'instant ce n'est ni nécessaire ni demandé)
-	if (ptr == NULL) {
-		perror("Ecrire1BlocFichierSF : Erreur creation element liste chainee");
-		DetruireInode(&inode);
-		fclose(fichier);
-		return -1;
+		EcrireDonneesInode1bloc(inode, chaine, resultatLecture);
+
+		sf -> listeInodes.nbInodes = 1;
+		struct sListeInodesElement * element = CreerListeInodeElement(inode, NULL);
+		if (element == NULL) {
+			perror("Ecrire1BlocFichierSF : Erreur allocation ellement");
+			DetruireInode(&inode);
+			fclose(fichier);
+			return -1;
+		}
+
+		sf -> listeInodes.premier = element;
+		sf -> listeInodes.dernier = element;
 	}
 
-	ptr->inode = inode;
-	ptr->suivant = NULL;
-
-	if (sf->listeInodes.premier == NULL) { // On se place dans le cas où la liste n'a pas été initialisée
-		sf->listeInodes.premier = ptr;
-		sf->listeInodes.dernier = sf->listeInodes.premier;
-	} else { // On rajoute un élément
-		sf->listeInodes.dernier->suivant = ptr;
-		sf->listeInodes.dernier = ptr;
-	}
-
-	fclose(fichier);
-
-	return ecrits;
+	return resultatLecture;
 }
