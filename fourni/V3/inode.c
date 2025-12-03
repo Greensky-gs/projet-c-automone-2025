@@ -267,6 +267,9 @@ long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long 
 	int c = decalage % TAILLE_BLOC;
 	int index = 0;
 
+	// On doit sauvegarder la taille car on doit la modifier progressivement au cas où un bloc soit crée et une erreur apparaisse
+	long ancienneTaille = inode->taille;
+
 	while (index < taille && index < TAILLE_BLOC * NB_BLOCS_DIRECTS) {
 		if (inode->blocDonnees[i] == NULL) {
 			inode->blocDonnees[i] = CreerBloc();
@@ -283,13 +286,10 @@ long EcrireDonneesInode(tInode inode, unsigned char *contenu, long taille, long 
 			i++;
 		}
 		index++;
-	}
 
-	// Ici on remplace, comme le ferait un véritable système de fichiers, la taille par la nouvelle taille : si elle est plus grande que l'ancienne, elle la remplace, sinon elle ne change pas.
-	// On fait ça car c'est plus ou moins ce que ferait le fichier : on change X bits au milieu du fichier, mais en gardant la fin (quand même)
-	inode->taille = inode->taille > decalage + index ? inode->taille : decalage + index;
-	// Une autre implémentation serait la suivante :
-	// inode->taille = decalage + index; // On remplace la taille du fichier par ce qu'on a écrit
+		long nouvelleTaille = decalage + i * TAILLE_BLOC + c;
+		if (ancienneTaille < nouvelleTaille) inode->taille = nouvelleTaille;
+	}
 
 	return index;
 }

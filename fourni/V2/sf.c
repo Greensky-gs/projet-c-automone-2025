@@ -194,6 +194,10 @@ void AfficherSF (tSF sf){
 	printf("---------------[ FIN SF ]---------------\n");
 }
 
+static void ModifDateDerModif(tSF sf) {
+	ctime(&(sf->superBloc->dateDerModif));
+}
+
 /* V2
 * Ecrit un fichier d'un seul bloc dans le système de fichiers.
 * Entrées : le système de fichiers, le nom du fichier (sur disque) et son type dans le SF (simulé)
@@ -246,5 +250,6 @@ long Ecrire1BlocFichierSF(tSF sf, char nomFichier[], natureFichier type) {
 
 	fclose(fichier);
 
+	ModifDateDerModif(sf);
 	return ecrits;
 }
